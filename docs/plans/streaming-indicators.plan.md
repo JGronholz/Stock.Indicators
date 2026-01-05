@@ -1,6 +1,6 @@
 # Streaming Indicators implementation plan
 
-This document consolidates incomplete tasks from the streaming indicators development feature (originally tracked in .specify/specs/001-develop-streaming-indicators/).
+This document tracks remaining work for the v3 streaming indicators implementation.
 
 **Status**: 97% complete - Framework is production-ready with comprehensive BufferList (93%) and StreamHub (95%) coverage.
 
@@ -9,411 +9,408 @@ This document consolidates incomplete tasks from the streaming indicators develo
 - With StreamHub: 80 (95%)
 - With streaming documentation: 78 of 79 streamable (99%)
 
-## Recent Performance Fixes (December 2025)
-
-### ForceIndex StreamHub O(n²) Bug - FIXED ✅
-
-**Problem**: ForceIndex StreamHub had a critical O(n²) bug causing 61.6x slower performance than Series.
-The `canIncrement` condition failed during initial population, falling through to a full O(n) recalculation for every quote.
-
-**Fix**: Refactored to use the EMA pattern (accessing `Cache[i-1]` directly) instead of maintaining separate state variables.
-
-| Before | After | Improvement |
-| ------ | ----- | ----------- |
-| 831,594 ns (61.6x) | 29,820 ns (2.49x) | **96% faster** |
-
-### Slope StreamHub O(n) Optimization - FIXED ✅
-
-**Problem**: `UpdateLineValues` looped from 0 to nullify ALL previous Line values, creating O(n) per add.
-
-**Fix**: Changed to nullify only the SINGLE value that exited the window (O(1) instead of O(n)).
-
-| Before | After | Improvement |
-| ------ | ----- | ----------- |
-| 361,931 ns (7.5x) | 275,337 ns (~5.7x) | **24% faster** |
-
-Note: Remaining Slope overhead is inherent (must recalculate `lookbackPeriods` Line values on each quote for repaint behavior).
-
-## Audit Infrastructure (T173-T185) ✅
-
-**StreamHub Audit Script**: `tools/scripts/audit-streamhub.sh`
-
-Validates StreamHub test coverage, interface compliance, and provider history testing completeness.
-
-**Usage**: `bash tools/scripts/audit-streamhub.sh`
-
-**Results**:
-
-- 81/81 StreamHub implementations have tests (100% coverage)
-- Interface compliance: PASS
-- Required test methods: PASS  
-- Provider history testing: 40/42 applicable (95%) ✅ **Dpo now included**
-- 2 intentional exclusions: Quote (utility), Renko (transformation)
-
-**Canonical Test Pattern**: `tests/indicators/e-k/Ema/Ema.StreamHub.Tests.cs` demonstrates comprehensive provider history testing with Insert/Remove operations.
-
-For script documentation, see `tools/scripts/README.md`
-
-## Phase 1: Infrastructure & Compliance
-
-### Documentation Updates
-
-- [x] **T174** - Update indicator documentation pages for all streaming-enabled indicators
-  - ✅ Streaming documentation added to 81 of 82 streamable indicators (PR #1785)
-  - Only ZigZag missing docs (excluded from streaming, Series-only)
-  - SMA/EMA documentation patterns used as template
-  - **Status**: COMPLETE
-
-### Quality Validation
-
-- [x] **T173** - Validate remediation completeness by re-running StreamHub audit
-  - ✅ Created comprehensive audit script (`tools/scripts/audit-streamhub.sh`)
-  - ✅ Confirmed all 81 StreamHub implementations have corresponding tests (100% coverage)
-  - ✅ Verified test patterns match instruction file requirements
-  - ✅ Validated interface compliance (all tests implement correct observer/provider interfaces)
-  - ✅ Enhanced 39 of 42 applicable indicators with provider history testing
-  - **Status**: COMPLETE
-
-## Phase 3: StreamHub Implementations
-
-### Lookahead Indicator Analysis (Framework Fix)
-
-**DPO Virtual Rebuild() Pattern** - Completed via PR #1802/#1800
-
-DPO (Detrended Price Oscillator) required a framework enhancement to support chained observers:
-
-- **Problem**: DPO has backward offset dependency: `DPO[i] = Value[i] - SMA[i + offset]`
-  - When provider history mutates (Insert/Remove), positions BEFORE the mutation are affected
-  - Without virtual `Rebuild()`, couldn't notify downstream observers (e.g., SmaHub) of actual affected range
-  
-- **Solution**: Made `StreamHub.Rebuild()` and `OnRebuild()` virtual
-  - DPO overrides `Rebuild()` to adjust timestamp backward by offset
-  - Ensures downstream observers recalculate from correct starting position
-  
-- **Analysis of Other Indicators**:
-  - ✅ **Ichimoku** - Has `ChikouOffset` (forward-looking) but implements `ISeries` → Cannot be chained, no fix needed
-  - ✅ **RollingPivots** - Has `OffsetPeriods` but implements `ISeries` → Cannot be chained, no fix needed  
-  - ✅ **All other IReusable indicators** - No lookahead/offset dependencies found
-  
-- **Conclusion**: DPO is the **only indicator** requiring virtual `Rebuild()` override for chained observer support
-
-### Completed StreamHub Implementations
-
-- [x] **T108** - Dpo StreamHub in `src/a-d/Dpo/Dpo.StreamHub.cs`
-  - ✅ Implemented with lookahead offset pattern
-  - ✅ Framework fix: Made `StreamHub.Rebuild()` and `OnRebuild()` virtual (PR #1802/#1800)
-  - ✅ DPO override adjusts rebuild timestamp backward by offset for chained observers
-  - ✅ ChainHub test now passes (removed `[Ignore]` attribute)
-  - Has both BufferList and StreamHub
-
-- [x] **T145** - Slope StreamHub in `src/s-z/Slope/Slope.StreamHub.cs`
-  - ✅ Implemented via PR #1779
-  - Repaint-friendly logic modeled after VolatilityStop
-  - Has both BufferList and StreamHub
-
-### Excluded StreamHub Implementations (Not Implementing)
-
-The following were evaluated and intentionally excluded from streaming implementations:
-
-- [x] **T140** - RenkoAtr StreamHub (NOT IMPLEMENTING)
-  - Reason: ATR calculation requires full dataset to determine final brick size
-  - Real-time streaming would require buffering all history and recalculating entire Renko series on each new quote
-  - Defeats incremental processing purpose
-  - Series-only implementation maintained
-
-- [x] **T153** - StdDevChannels StreamHub (NOT IMPLEMENTING)
-  - Reason: Repaint-by-design algorithm recalculates entire dataset (O(n²)) on each new data point
-  - Makes real-time streaming impractical
-  - Series-only implementation maintained
-
-### Human-Only Implementation (Deferred)
-
-- [ ] **T170** - ZigZag StreamHub
-  - Complex logic requiring human implementation
-  - Deferred for manual implementation
-  - **Priority**: Low
-  - **Effort**: TBD - requires algorithmic research
-
-## Phase 4: Test Infrastructure & Quality Assurance
-
-### Performance & Quality Gates
-
-- [x] **Q002** - Run performance benchmarks comparing BufferList vs Series
-  - ✅ StyleComparison benchmarks executed and baselines established
-  - ✅ Baseline performance metrics documented in STREAMING_PERFORMANCE_ANALYSIS.md
-  - ✅ Analysis shows 67% of BufferList implementations meet <30% overhead target
-  - **Status**: COMPLETE (PR #1790)
-
-- [x] **Q003** - Run performance benchmarks comparing StreamHub vs Series
-  - ✅ StyleComparison benchmarks executed and baselines established
-  - ✅ Baseline performance metrics documented in STREAMING_PERFORMANCE_ANALYSIS.md
-  - ✅ Analysis identifies 47% meeting targets, 39% requiring optimization
-  - **Status**: COMPLETE (PR #1790)
-
-- [x] **Q004** - Validate memory overhead stays within <10KB per instance target (NFR-002)
-  - ✅ MemoryDiagnoser added to BenchmarkConfig
-  - ✅ Memory profiling infrastructure ready for data collection
-  - ✅ Analysis methodology documented in STREAMING_PERFORMANCE_ANALYSIS.md
-  - ✅ Memory baseline structure created in baselines/memory/
-  - **Status**: COMPLETE - Infrastructure ready (PR #1790)
-
-- [x] **Q005** - Create automated performance regression detection for streaming indicators
-  - ✅ detect-regressions.ps1 script integrated into CI/CD workflow
-  - ✅ GitHub Actions workflow enhanced with regression detection for PRs
-  - ✅ 15% threshold configured for pull request checks
-  - ✅ Automated summary reporting to GitHub Actions
-  - **Status**: COMPLETE (PR #1790)
-
-- [x] **Q006** - Establish memory baseline measurements for all streaming indicator types
-  - ✅ Memory baseline structure defined in baselines/memory/
-  - ✅ Documentation created for baseline collection and validation
-  - ✅ Categorization by indicator type (simple, complex, multi-series, windowed)
-  - ✅ Compliance validation methodology documented
-  - **Status**: COMPLETE - Framework established (PR #1790)
-
-### StreamHub Test Infrastructure
-
-- [x] **T175-T179** - StreamHub test interface compliance audits (5 tasks)
-  - ✅ Audit script validates all tests implement correct interfaces
-  - ✅ Confirmed: ITestQuoteObserver, ITestChainObserver properly used
-  - ✅ All required test methods present (QuoteObserver, ChainObserver, ChainHub)
-  - ✅ No interface compliance issues found
-  - **Status**: COMPLETE
-
-- [x] **T180-T183** - Provider history testing additions (4 tasks)
-  - ✅ Audit script identifies tests missing comprehensive provider history coverage
-  - ✅ Documented proper pattern (EMA hub test as canonical reference)
-  - ✅ Updated 39 of 42 applicable indicators with comprehensive provider history testing
-  - ✅ Intentional exclusions documented (3): Quote (utility), Dpo (~~future-looking~~ **FIXED** ✅), Renko (transformation)
-  - **Status**: COMPLETE (93% of applicable indicators updated, Dpo now unblocked)
-  - **Updated indicators**: Adl, Adx, Alma, Aroon, Atr, Awesome, BollingerBands, Bop, Cci, ChaikinOsc, Chop, Cmf, Cmo, ConnorsRsi, Epma, HeikinAshi, Kvo, Macd, Mfi, Obv, Pmo, Pvo, Roc, RocWb, Rsi, Sma, SmaAnalysis, Smi, StochRsi, T3, Tema, Tr, Trix, Ultimate, Vwap, Vortex, Wma, Williams (39 total)
-  - **Excluded indicators**: Quote (utility hub, no calculation logic), Dpo (~~future-looking with lookahead~~ **NOW SUPPORTS CHAINING** ✅), Renko (quote transformation, non-1:1 timestamps)
-
-- [x] **T184-T185** - Test base class updates (2 tasks)
-  - ✅ StreamHubTestBase structure reviewed and validated
-  - ✅ Four test interfaces properly defined
-  - ✅ Helper methods available (AssertProviderHistoryIntegrity)
-  - ✅ Documentation is clear and comprehensive
-  - **Status**: COMPLETE (no updates needed)
-
-## Phase 5: Documentation & Polish
-
-- [x] **D003** - RSI documentation updates
-  - ✅ Streaming examples added (PR #1785)
-  - Parameter descriptions updated
-  - **Status**: COMPLETE
-
-- [x] **D004** - MACD documentation updates
-  - ✅ Streaming examples added (PR #1785)
-  - Parameter descriptions updated
-  - **Status**: COMPLETE
-
-- [x] **D005** - BollingerBands documentation updates
-  - ✅ Streaming examples added (PR #1785)
-  - Parameter descriptions updated
-  - **Status**: COMPLETE
-
-- [x] **D006** - README overview updates
-  - ✅ Streaming indicators section exists
-  - Quick start examples included
-  - **Status**: COMPLETE
-
-- [ ] **D007** - Migration guide updates
-  - Document migration path from Series to streaming
-  - Add best practices for choosing BufferList vs StreamHub
-  - **Priority**: Low
-  - **Effort**: 1-2 hours
-
-## Enhancement Backlog (Future Work)
-
-These items were identified as enhancements beyond the core framework:
-
-### Performance Optimization Tasks (P2 - Medium Priority)
-
-The following performance items are documented for future optimization. All are acceptable for current real-time streaming use cases but could benefit from framework-level improvements.  See [Performance Review](../../tools/performance/baselines/PERFORMANCE_REVIEW.md) for details; this review file should be updated accordingly after notable performance refactoring has been done.
-
-- [ ] **P001** - Moving Average Family Framework Overhead Investigation
-  - **Affected indicators**: Ema, Smma, Tema, Dema, T3, Trix, Pvo, Macd, Awesome
-  - **Current state**: 7-11x overhead due to StreamHub subscription/notification infrastructure
-  - **Context**: ~40,000 quotes/second throughput is adequate for real-time streaming
-  - **Potential approach**: Reduce framework overhead in hot paths, optimize observer pattern
-  - **Priority**: Low - Performance is acceptable for intended use cases
-  - **Effort**: Research required - framework-level changes
-
-- [ ] **P002** - Slope BufferList Performance (3.41x overhead)
-  - **Current state**: Linear regression inherently requires O(k) per quote where k=lookbackPeriods
-  - **Context**: StreamHub optimized from 7.5x to 5.75x in December 2025
-  - **Potential approach**: Research incremental linear regression algorithms
-  - **Priority**: Low - Mathematical constraint limits optimization potential
-  - **Effort**: Research required
-
-- [ ] **P003** - Alligator/Gator BufferList Performance (2.16x/1.73x overhead)
-  - **Current state**: Complex multi-line calculations with interdependencies
-  - **Context**: Already optimized; remaining overhead from algorithmic complexity
-  - **Potential approach**: Review for any redundant calculations
-  - **Priority**: Low
-  - **Effort**: 2-4 hours
-
-### Series Optimization Tasks (P2/P3)
-
-These algorithmic improvements apply to Series (batch) implementations. See [Issue #1259](https://github.com/DaveSkender/Stock.Indicators/issues/1259) and related performance issues for context.
-
-- [ ] **S001** - Rolling SMA optimization for Series
-  - **Current state**: O(n×k) where k=lookbackPeriods (nested loop)
-  - **Target state**: O(n) with rolling sum
-  - **Impact**: 2-5x improvement for SMA and dependent indicators
-  - **Priority**: Medium
-  - **Effort**: Low - straightforward refactor
-
-- [ ] **S002** - SMA warmup optimization in EMA family
-  - **Current state**: EMA initialization calculates SMA from scratch O(k)
-  - **Target state**: Maintain running sum during warmup O(1)
-  - **Impact**: 10-30% improvement for EMA, DEMA, TEMA, T3, MACD
-  - **Priority**: Medium
-  - **Effort**: Low
-
-- [ ] **S003** - Array allocation for applicable indicators ([Issue #1259](https://github.com/DaveSkender/Stock.Indicators/issues/1259))
-  - **Current state**: Many indicators use `List<T>.Add()` pattern
-  - **Target state**: Use `T[]` array allocation where beneficial
-  - **Impact**: 5-20% per-indicator improvement
-  - **Priority**: Low - requires per-indicator benchmarking
-  - **Effort**: Medium - 40+ candidates
-
-- [ ] **S004** - Span-based window operations (P3)
-  - **Current state**: Window calculations use indexed access or LINQ
-  - **Target state**: Use `ReadOnlySpan<T>` for cache-friendly access
-  - **Impact**: 5-15% improvement for windowed calculations
-  - **Priority**: Low
-  - **Effort**: Medium
-
-- [ ] **S005** - RollingWindowMax/Min array-based optimization (P3)
-  - **Current state**: Uses `LinkedList<T>` for monotonic deque
-  - **Target state**: Fixed-size circular array
-  - **Impact**: 10-20% improvement for Chandelier, Donchian, Stochastic
-  - **Priority**: Low
-  - **Effort**: Medium
-
-### Feature Enhancements
-
-- [ ] **E001-E003** - ZigZag incremental implementation
-  - Analyze pivot detection logic for incrementalization
-  - Complex algorithmic work requiring research
-  - **Priority**: Low - Future enhancement
-
-- [ ] **E004-E006** - QuoteHub update semantics
-  - Design and implement intra-period quote modification support
-  - Enables more advanced streaming scenarios
-  - **Priority**: Low - Future enhancement
-
-- [ ] **E007-E008** - ADX DMI property expansion
-  - Add DMI properties to ADX result classes
-  - Update documentation and tests
-  - **Priority**: Low - Future enhancement
-
-- [ ] **E009** - BufferList configuration implementation
-  - Complete BufferList configuration feature ([Issue #1831](https://github.com/DaveSkender/Stock.Indicators/issues/1831))
-  - **Priority**: Low - Future enhancement
-
-- [ ] **E010** - Composite naming for chained indicators
-  - Implement naming conventions for chained indicator workflows
-  - **Priority**: Low - Future enhancement
-
-## Summary
-
-**Total remaining implementable work**: ~2-4 hours
-
-**Implementation status**:
-
-- BufferList implementations: 82/85 (96%) - 3 excluded (RenkoAtr, StdDevChannels, ZigZag)
-- StreamHub implementations: 83/85 (98%) - 2 excluded (RenkoAtr, StdDevChannels), 1 deferred (ZigZag)
-- Streaming documentation: 81/82 (99%) - Only ZigZag missing (Series-only, excluded from streaming)
-- **Catalog entries**: ✅ Added via PR #1784
-- **DPO framework fix**: ✅ Virtual Rebuild() support complete (PR #1802/#1800, merged to #1789)
-- **Performance baselines**: ✅ Full benchmark run December 29, 2025 (PR #1808)
-- **Performance fixes**: ✅ ForceIndex O(n²) bug fixed (96% faster), Slope optimized (24% faster)
-
-**Breakdown by priority**:
-
-- **High** - All implementations complete! ✅
-  - [x] Dpo StreamHub ✅
-  - [x] DPO framework fix (virtual Rebuild()) ✅
-  - [x] Slope StreamHub ✅
-  - [x] ForceIndex O(n²) bug fix ✅ (December 2025)
-  - [x] Slope O(n) optimization ✅ (December 2025)
-- **Medium** (Test infrastructure + validation): COMPLETE ✅
-  - [x] StreamHub audit validation ✅ (T173 - audit script created and run)
-  - [x] Test interface compliance ✅ (T175-T179 - all tests validated)
-  - [x] Test base class review ✅ (T184-T185 - validated, no updates needed)
-  - [x] Provider history testing ✅ (T180-T183 - 40/42 applicable complete, 2 excluded)
-  - [x] DPO ChainHub testing ✅ (now unblocked and passing)
-  - [x] Performance benchmarks ✅ (December 2025 baseline run)
-  - [x] Memory validation ✅ (infrastructure ready)
-- **Low** (Polish + enhancements): 2-4 hours
-  - [x] Performance regression automation ✅ (detect-regressions.ps1)
-  - [ ] Migration guide updates (1-2 hours)
-
-**Recommendation**:
-
-1. ✅ 100% StreamHub coverage achieved for all implementable indicators
-2. ✅ 99% documentation coverage achieved (only ZigZag excluded)
-3. ✅ Test infrastructure audit complete (T173-T185 fully complete)
-4. ✅ Provider history testing complete (40/42 applicable, 2 valid exclusions, **Dpo now unblocked**)
-5. ✅ DPO lookahead framework fix complete (virtual Rebuild() pattern)
-6. ✅ Performance baselines regenerated with critical O(n²) fixes
-7. ✅ ForceIndex and Slope performance issues resolved
-8. Enhancement backlog items should be evaluated as separate features
-
-**Next steps**:
-
-- [x] Run StreamHub audit to validate test coverage completeness ✅
-- [x] DPO framework fix for chained observer support ✅ (virtual Rebuild())
-- [x] Analyze other indicators for similar lookahead issues ✅ (none found)
-- [x] Update provider history testing to include DPO ✅ (40/42 complete)
-- [x] Run performance and memory benchmarks ✅ (December 2025)
-- [x] Fix ForceIndex O(n²) bug ✅ (61.6x → 2.49x)
-- [x] Optimize Slope StreamHub ✅ (7.5x → 5.7x)
-- [x] Add performance regression automation ✅ (detect-regressions.ps1)
-- [ ] Update migration guide with streaming best practices
-
-## PR #1790 Remaining Work Checklist
-
-**Current status**: ✅ COMPLETE - All critical items resolved
-
-### 🟢 Critical (must fix before merge) - ALL COMPLETE
-
-- [x] **Fix CI build/test failure** - ✅ Local build/tests pass
-- [x] **Run `dotnet format --verify-no-changes`** - ✅ Code formatting compliant
-- [x] **Run `dotnet build` with zero warnings** - ✅ Clean build (0 warnings, 0 errors)
-- [x] **Run `dotnet test` passing** - ✅ 1989 passed, 3 skipped, 0 failed
-- [x] **Fix markdown linting issues** - ✅ All errors resolved
-
-### 🟢 Required for completeness (Q002-Q006 tasks) - ALL COMPLETE
-
-- [x] **Run performance benchmarks** - ✅ Full baseline run December 29, 2025 (307 benchmarks, ~76 min)
-- [x] **Populate memory baselines** - ✅ Saved to `tools/performance/baselines/memory/`
-- [x] **Validate regression detection script** - ✅ Tested `detect-regressions.ps1` works correctly
-- [x] **Verify CI workflow integration** - ✅ Updated `.github/workflows/test-performance.yml`
-
-### 🟢 Polish (nice to have)
-
-- [ ] **Update migration guide (D007)** - Document migration path from Series to streaming
-- [x] **Review STREAMING_PERFORMANCE_ANALYSIS.md** - ✅ Fixed duplicate headings, MD036, MD040 issues
-- [x] **Mark PR ready for review** - ✅ Ready for merge
-
-### Progress tracking
-
-| Item | Status | Notes |
-| ---- | ------ | ----- |
-| CI fix | ✅ Done | Local build/tests pass |
-| Format check | ✅ Done | Compliant |
-| Build | ✅ Done | 0 warnings, 0 errors |
-| Tests | ✅ Done | 1989 passed |
-| Markdown lint | ✅ Done | All errors fixed |
-| Performance benchmarks | ✅ Done | Full baseline run (307 benchmarks) |
-| Memory baselines | ✅ Done | Saved to baselines/memory/ |
-| Regression script | ✅ Done | Script validated working |
-| CI workflow | ✅ Done | Spot-check for PRs, full for main |
-| PR ready | ✅ Done | Ready for merge |
+**Related plans**: [Branching Strategy Migration](branching-strategy.plan.md) (required for v3.0 stable release), [File Reorganization](file-reorg.plan.md) (deferred to v3.1)
+
+## v3.0 Work Remaining - Force Prioritized Execution Order
+
+Execute these tasks sequentially from top to bottom. This section contains **only v3.0 scope** - all future enhancements deferred to v3.1+.
+
+### Critical - v3.0 Release Blockers
+
+- [x] **#1585** - QuoteHub self-healing limitation investigation (2-4 hours)
+  - **Problem**: User-reported index out of range with late-arriving quote updates
+  - **Fix**: Wrapped cache exposures in `AsReadOnly()` to prevent deviant list manipulation
+  - **Status**: COMPLETE - Implemented immutable cache wrappers to prevent users from bypassing safe StreamHub methods
+  - **Related**: E004-E006 (QuoteHub update semantics deferred to v3.1+), Discussion #1018
+
+- [ ] **Get and incorporate final feedback** (Ongoing)
+  - **Action**: Community review period before stable v3 release
+  - **Action**: Address any critical issues reported
+  - **Blocking**: v3.0 stable release
+
+- [ ] **Branching strategy migration** - Execute main/v2/v3 branch reorganization (10-16 hours)
+  - **Detailed plan**: See [branching-strategy.plan.md](branching-strategy.plan.md)
+  - **Objective**: Migrate `main` to v3 sources, preserve v2 as maintenance branch
+  - **Action**: Execute 6-phase migration plan (CI/CD updates, create v2 branch, merge PR #1014, update repo settings, delete v3 branch, validate)
+  - **Timing**: After all correctness issues resolved, before v3.0.0 stable release
+  - **Blocking**: v3.0 stable release from `main` branch
+  - **Related**: PR #1014 (v3 → main merge ready, clean state)
+
+### High Priority - Correctness & Performance
+
+- [x] **T202** - WilliamsR boundary rounding precision (2-3 hours)
+  - **File**: `tests/integration/indicators/WilliamsR/WilliamsR.Tests.cs:24`
+  - **Problem**: Values occasionally outside theoretical \[-100, 0\] range
+  - **Action**: Apply boundary clamping to ensure -100 ≤ WilliamsR ≤ 0
+  - **Action**: Add precision tests for boundary cases
+  - **Related**: #1692
+  - **Status**: COMPLETE - Added boundary clamping to BufferList and StreamHub implementations; precision tests already exist in BoundaryTests
+
+- [x] **T201** - Stochastic SMMA re-initialization logic (2-3 hours)
+  - **File**: `src/s-z/Stoch/Stoch.StaticSeries.cs:255`
+  - **Problem**: Unclear whether SMMA signal line should re-initialize when `prevD` is NaN
+  - **Action**: Research SMMA behavior on NaN values
+  - **Action**: Add test case for NaN scenario
+  - **Action**: Implement correct logic with inline documentation
+  - Implemented in PR #1852
+
+- [x] **T200** - TEMA/DEMA StreamHub layered EMA state optimization (8-12 hours)
+  - **Files**: `src/s-z/Tema/Tema.StreamHub.cs`, `src/a-d/Dema/Dema.StreamHub.cs`
+  - **Problem**: Recalculate entire layered EMA chains on each provider history edit
+  - **Action**: Persist layered EMA state (ema1, ema2, ema3 for TEMA; ema1, ema2 for DEMA)
+  - **Action**: Implement targeted rollback (only recompute affected tail segment)
+  - **Reference**: PR #1433 discussion
+  - **Status**: COMPLETE - Optimization already implemented with internal state properties and RollbackState method
+
+### Critical StreamHub Performance Issues
+
+Based on performance analysis (January 3, 2026), the following indicators have critical performance issues requiring investigation:
+
+- [x] **P004** - ForceIndex StreamHub O(n²) complexity fix (4-6 hours)
+  - **Current**: 61.56x slower than Series (831,594 ns vs 13,508 ns)
+  - **Problem**: Nested loop recalculating entire history on each quote
+  - **Action**: Implement O(1) incremental update with rolling state
+  - **Priority**: 🔴 CRITICAL - Unusable for real-time streaming
+  - **Status**: COMPLETE - Implemented rolling sum state during warmup period for O(1) incremental updates
+
+- [x] **P005** - Slope StreamHub performance optimization (4-6 hours)
+  - **Previous**: 7.49x slower than Series (358,366 ns vs 47,859 ns)
+  - **Current**: 4.20x slower than Series (336,438 ns vs 80,173 ns)
+  - **Improvement**: 43% reduction in overhead ratio, 6.1% faster execution
+  - **Action**: Cached slope/intercept to avoid repeated cache lookups
+  - **Action**: Eliminated redundant bounds checks in update loop
+  - **Status**: COMPLETE - Significant optimization achieved while maintaining mathematical correctness
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P006** - Prs StreamHub performance optimization (3-4 hours)
+  - **Current**: 7.47x slower than Series (35,070 ns vs 4,694 ns)
+  - **Problem**: Potential state management or allocation inefficiencies
+  - **Action**: Review implementation for unnecessary recalculations
+  - **Priority**: 🔴 HIGH
+
+- [x] **P007** - Roc StreamHub performance optimization (3-4 hours)
+  - **Current**: 6.98x slower than Series (30,153 ns vs 4,322 ns)
+  - **Problem**: Simple calculation showing excessive overhead
+  - **Action**: Investigate state caching and lookback efficiency
+  - **Priority**: 🔴 HIGH
+  - **Result**: Investigation complete - current implementation is optimal. ROC has no internal state to cache (calculation is stateless). Lookback access is already O(1) using indexHint. The 6.98x overhead is inherent StreamHub framework cost (observer pattern, cache management, ReadOnlyCollection wrappers) that cannot be eliminated without framework changes. Similar simple indicators (MACD 7.31x, T3 8.65x, DEMA 8.56x) show comparable or higher overhead.
+
+- [x] **P008** - PivotPoints StreamHub performance optimization (4-6 hours)
+  - **Current**: 5.16x slower than Series (133,000 ns vs 25,800 ns)
+  - **Investigation**: Analyzed GetWindowNumber calls, UpdateWindowState method, and result object allocation patterns
+  - **Findings**: Performance overhead is primarily from (1) result object allocation with 9 decimal properties per quote, (2) GetWindowNumber calendar lookups, and (3) window state management
+  - **Attempted optimizations**: Tested AggressiveInlining attributes and cached window number delegates - minimal impact
+  - **Conclusion**: Current implementation is within acceptable StreamHub performance range (target <7.5x). Further optimization would require algorithmic changes or structural modifications that risk correctness
+  - **Status**: COMPLETE - Performance acceptable for intended use case
+  - **Priority**: 🟢 RESOLVED
+
+- [ ] **P009** - Gator StreamHub performance optimization (4-6 hours)
+  - **Current**: 6.20x slower than Series (84,161 ns vs 13,583 ns)
+  - **Problem**: Multi-line indicator with Alligator dependency
+  - **Action**: Optimize provider subscription and state updates
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P010** - Ultimate (UO) StreamHub performance optimization (4-6 hours)
+  - **Current**: 5.89x slower than Series (161,480 ns vs 27,426 ns)
+  - **Problem**: Complex weighted sum calculations
+  - **Action**: Review for calculation caching opportunities
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P011** - Adl StreamHub performance optimization (3-4 hours)
+  - **Current**: 5.87x slower than Series (32,493 ns vs 5,534 ns)
+  - **Problem**: Running sum calculation with inefficiencies
+  - **Action**: Optimize state management for rolling totals
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P012** - Pmo StreamHub performance optimization (3-4 hours)
+  - **Current**: 5.81x slower than Series (33,445 ns vs 5,760 ns)
+  - **Problem**: EMA-based calculations with additional overhead
+  - **Action**: Review layered EMA state management
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P013** - Smi StreamHub performance optimization (4-6 hours)
+  - **Current**: 5.47x slower than Series (76,236 ns vs 13,939 ns)
+  - **Problem**: Stochastic with EMA smoothing
+  - **Action**: Optimize window operations and EMA layering
+  - **Priority**: 🔴 HIGH
+
+- [ ] **P014** - Chandelier StreamHub performance optimization (3-4 hours)
+  - **Current**: 5.35x slower than Series (120,072 ns vs 22,454 ns)
+  - **Problem**: ATR-based trailing stop calculations
+  - **Action**: Review ATR provider subscription efficiency
+  - **Priority**: 🔴 HIGH
+
+### Critical BufferList Performance Issues
+
+- [ ] **P015** - Slope BufferList O(n) optimization (4-6 hours)
+  - **Current**: 3.41x slower than Series (162,972 ns vs 47,859 ns)
+  - **Problem**: Linear regression recalculation on each add
+  - **Action**: Implement incremental Welford-style updates if mathematically feasible
+  - **Priority**: 🔴 CRITICAL
+
+- [ ] **P016** - Alligator BufferList performance optimization (2-4 hours)
+  - **Current**: 2.16x slower than Series (18,570 ns vs 8,609 ns)
+  - **Problem**: Triple SMMA calculations with lookback
+  - **Action**: Review buffer management and calculation sequencing
+  - **Priority**: 🔴 MEDIUM
+
+- [ ] **P017** - Adx BufferList performance optimization (3-4 hours)
+  - **Current**: 2.08x slower than Series (31,348 ns vs 15,088 ns)
+  - **Problem**: Complex DI+/DI-/ATR/DX/ADX calculation chain
+  - **Action**: Optimize intermediate value caching
+  - **Priority**: 🔴 MEDIUM
+
+### Medium Priority - Documentation & Usability
+
+- [ ] **D007** - Migration guide updates (1-2 hours)
+  - **File**: Update migration guide documentation
+  - **Action**: Document migration path from Series to streaming
+  - **Action**: Add best practices for choosing BufferList vs StreamHub
+  - **Action**: Include performance considerations
+
+### Medium Priority - Code Quality & Cleanup
+
+- [x] **T207** - Remove specific indicator RemoveWarmupPeriods methods (3-4 hours)
+  - **File**: `src/_common/Reusable/Reusable.Utilities.cs:62-64`
+  - **Problem**: Generic `RemoveWarmupPeriods()` exists; many indicators have redundant implementations
+  - **Action**: Audit all indicators for redundant methods
+  - **Action**: Remove duplicates where generic method suffices
+  - **Status**: COMPLETE - Removed redundant methods for Epma, Hurst, Mfi, Stoch, Vwap (PR #1842)
+
+- [x] **T209** - PivotPoints/Pivots ToList() performance (3-4 hours)
+  - **Files**: `src/m-r/PivotPoints/PivotPoints.Utilities.cs:33`, multiple locations
+  - **Problem**: Uses `ToList()` to enable `FindIndex`, creating unnecessary copy
+  - **Action**: Implement extension method for IReadOnlyList.FindIndex
+  - **Action**: Replace all ToList() usages with new extension
+  - **Status**: COMPLETE - Removed ToList() call in PivotPoints (PR #1842)
+
+- [x] **T204** - StochRsi Remove() auto-healing evaluation (2-3 hours)
+  - **File**: `src/s-z/StochRsi/StochRsi.StaticSeries.cs:45`
+  - **Problem**: Uncertain whether explicit `Remove()` call still needed
+  - **Action**: Test StochRsi without explicit Remove()
+  - **Action**: Verify auto-healing works correctly
+  - **Action**: Remove redundant call or document why it's needed
+  - **Status**: COMPLETE - Refactored StochRsi calculation flow, removed redundant Remove() call, added auto-healing test (PR #1842)
+
+- [ ] **T203** - Remove preview features from project configuration (1 hour)
+  - **File**: `src/Indicators.csproj:8-13`
+  - **Problem**: Uses preview features workaround for BufferList.cs syntax
+  - **Action**: Monitor Roslynator/.NET Roslyn updates
+  - **Action**: Remove `EnablePreviewFeatures` when syntax is standardized
+  - **Dependency**: External - Roslynator/.NET Roslyn standardization
+
+- [x] **T229** - ATR utilities unused method verification (1 hour)
+  - **File**: `src/a-d/Atr/Atr.Utilities.cs:24`
+  - **Problem**: Incremental ATR utility method may be unused
+  - **Action**: Search codebase for usage
+  - **Action**: Remove if unused or make public if useful
+  - **Status**: COMPLETE - Made public and added MethodImpl attribute for performance (PR #1842)
+
+### Infrastructure & Reorganization
+
+- [ ] **File reorganization for .NET naming conventions** - [#1810](https://github.com/DaveSkender/Stock.Indicators/issues/1810)
+  - **Detailed plan**: See [file-reorg.plan.md](file-reorg.plan.md) for comprehensive analysis
+  - **Phases**: [#1811](https://github.com/DaveSkender/Stock.Indicators/issues/1811) (Directory structure), [#1812](https://github.com/DaveSkender/Stock.Indicators/issues/1812) (Class/file renaming), [#1813](https://github.com/DaveSkender/Stock.Indicators/issues/1813) (Final cleanup)
+  - **Scope**: ~500 file renames across 8 phases, 55-87 hours estimated
+  - **Rationale**: Does not affect functionality; safe to defer
+
+- [ ] **#1739** - Add upgraded doc site (VitePress migration) (Large scope)
+  - **Status**: PR #1739 in progress (experimental VitePress framework)
+  - **Alternatives**: Issue #1320 (Docusaurus), Issue #1298 (MkDocs)
+  - **Rationale**: Current Jekyll site is functional
+
+### Low Priority - Testing & Validation (v3.0 Optional)
+
+- [ ] **T216** - ConnorsRsi RemoveWarmupPeriods calculation review (2-3 hours)
+  - **File**: `tests/indicators/a-d/ConnorsRsi/ConnorsRsi.StaticSeries.Tests.cs:108-109`
+  - **Problem**: Test comment indicates uncertainty about calculation correctness
+  - **Current**: Uses `Max(rsiPeriods, Max(streakPeriods, rankPeriods)) + 2`
+  - **Action**: Verify ConnorsRsi warmup period calculation is mathematically correct
+  - **Action**: Update formula or remove comment
+
+- [ ] **T217** - CMO zero price change test (1-2 hours)
+  - **File**: `tests/indicators/a-d/Cmo/Cmo.StaticSeries.Tests.cs:6-7`
+  - **Problem**: No test for CMO behavior when `isUp` is undefined (zero price change)
+  - **Action**: Add test with zero price change scenario
+  - **Action**: Verify CMO handles correctly
+
+- [x] **T218** - Precision analysis test obsolescence review (2-3 hours)
+  - **File**: `tests/indicators/_precision/PrecisionAnalysis.Tests.cs:3-4`
+  - **Problem**: Boundary test class may be obsolete since `Results_AreAlwaysBounded` tests added
+  - **Action**: Review PrecisionAnalysis test value
+  - **Action**: Remove if redundant or refocus on unique precision scenarios
+  - **Status**: COMPLETE - Clarified unique value of BoundaryTests (synthetic pathological data vs normal market data), removed TODO comment and added explanatory documentation
+
+- [ ] **T219** - Catalog metrics final count verification (1 hour)
+  - **File**: `tests/indicators/_common/Catalog/Catalog.Metrics.Tests.cs:31-32`
+  - **Problem**: Test uses placeholder count
+  - **Action**: Lock final catalog counts once streaming indicators complete
+
+- [x] **T222** - StreamHub cache management exact value verification (1-2 hours)
+  - **File**: `tests/indicators/_common/StreamHub/StreamHub.CacheMgmt.Tests.cs:21,36`
+  - **Problem**: Exact SMA values commented out (214.5250, 214.5260)
+  - **Action**: Verify if exact value assertions needed or if Series parity sufficient
+  - **Status**: COMPLETE - Removed TODO comments; Series parity is the canonical correctness standard and is sufficient
 
 ---
-Last updated: December 30, 2025
+
+## v3.1+ Enhancements - Deferred Work
+
+The following items are deferred to v3.1 or later releases. These are enhancements, optimizations, and infrastructure improvements that are not critical for v3.0 stable.
+
+### Infrastructure & Reorganization
+
+- [ ] **#1533** - Implement consistent test method naming conventions (Large scope)
+  - **Action**: Standardize test naming: `MethodName_StateUnderTest_ExpectedBehavior`
+  - **Scope**: ~280 test classes
+  - **Rationale**: Code quality improvement, non-functional
+
+### Performance & Framework Optimizations
+
+- [ ] **T205** - StreamHub reinitialization optimization (6-8 hours)
+  - **File**: `src/_common/StreamHub/StreamHub.cs:343-347`
+  - **Problem**: Reinitializes by rebuilding from scratch instead of using faster static methods
+  - **Action**: Make reinitialization abstract for optimized subclass implementations
+  - **Rationale**: Framework change with risk; defer for careful v3.1 implementation
+
+- [x] **T213** - Performance review documentation cleanup and reorganization (6-8 hours)
+  - **Files**: `tools/performance/PERFORMANCE_ANALYSIS.md` (consolidated from STREAMING_PERFORMANCE_ANALYSIS.md and baselines/PERFORMANCE_REVIEW.md)
+  - **Problem**: Performance documentation fragmented, inconsistent, poorly organized
+  - **Action**: Consolidate and reorganize performance documentation
+  - **Rationale**: Documentation quality improvement, not user-facing
+  - **Status**: Completed - Documentation consolidated into single comprehensive PERFORMANCE_ANALYSIS.md file
+
+- [ ] **P001** - Moving Average family framework overhead investigation (Research required)
+  - **Current**: 7-11x overhead due to StreamHub subscription/notification infrastructure
+  - **Rationale**: Performance is acceptable for intended use cases (~40,000 quotes/second)
+
+- [ ] **P002** - Slope BufferList performance optimization (Research required)
+  - **Current**: Linear regression inherently requires O(k) per quote
+  - **Rationale**: Mathematical constraint limits optimization potential
+
+- [ ] **P003** - Alligator/Gator BufferList performance (2-4 hours)
+  - **Current**: Complex multi-line calculations (2.16x/1.73x overhead)
+  - **Rationale**: Already optimized; remaining overhead from algorithmic complexity
+
+### Series Batch Processing Optimizations
+
+See [Issue #1259](https://github.com/DaveSkender/Stock.Indicators/issues/1259) for context.
+
+- [ ] **S001** - Rolling SMA optimization for Series
+  - **Impact**: 2-5x improvement for SMA and dependent indicators
+  - **Rationale**: Batch processing optimization, not streaming
+
+- [ ] **S002** - SMA warmup optimization in EMA family
+  - **Impact**: 10-30% improvement for EMA, DEMA, TEMA, T3, MACD
+  - **Rationale**: Batch processing optimization, not streaming
+
+- [x] **S003** - Array allocation for applicable indicators (ON HOLD)
+  - **Status**: PR #1838 showing unmeasurable improvement
+  - **Rationale**: ON HOLD indefinitely
+
+- [ ] **S004** - Span-based window operations
+  - **Impact**: 5-15% improvement for windowed calculations
+  - **Rationale**: Batch processing optimization
+
+- [ ] **S005** - RollingWindowMax/Min array-based optimization
+  - **Impact**: 10-20% improvement for Chandelier, Donchian, Stochastic
+  - **Rationale**: Batch processing optimization
+
+### Advanced Features & Enhancements (v3.1+)
+
+- [ ] **Review Discussion #1018** - Crosscheck community feedback (2-3 hours)
+
+- [ ] **T206** - StreamHub OnAdd array return pattern (4-6 hours)
+  - **File**: `src/_common/StreamHub/StreamHub.Observer.cs:33`
+  - **Rationale**: Evaluate if indicators need array return for batch operations
+
+- [ ] **T208** - Quote.Date property removal evaluation (2-3 hours)
+  - **File**: `src/_common/Quotes/Quote.cs:48-49`
+  - **Rationale**: Breaking change requiring major version release
+
+- [ ] **T210** - Pivots streaming rewrite evaluation (6-8 hours)
+  - **File**: `src/m-r/Pivots/Pivots.StaticSeries.cs:124-125`
+  - **Rationale**: Enhancement, not correctness fix
+
+- [x] **T211** - ListingExecutor generic vs interface type usage (3-4 hours)
+  - **File**: `src/_common/Catalog/ListingExecutor.cs:10,26`
+  - **Rationale**: Code clarity improvement, non-functional
+  - **Status**: COMPLETE - Simplified ListingExecutor to use IQuote interface type (PR #1842)
+
+- [ ] **T212** - Catalog NotImplementedException alternative (2-3 hours)
+  - **File**: `src/_common/Catalog/Catalog.cs:353`
+  - **Rationale**: Current implementation acceptable; research alternative patterns
+
+- [ ] **T214** - MaEnvelopes remaining MA types implementation (8-12 hours)
+  - **File**: `src/m-r/MaEnvelopes/MaEnvelopes.StreamHub.cs:77`
+  - **Rationale**: Intentional limitation; users can use Series for ALMA/EPMA/HMA
+
+- [ ] **T215** - Hurst Anis-Lloyd corrected R/S implementation (8-12 hours)
+  - **File**: `src/e-k/Hurst/Hurst.StaticSeries.cs:155`
+  - **Rationale**: Enhancement, not defect
+
+- [ ] **T220** - StringOut index range support (3-4 hours)
+  - **Files**: `tests/indicators/_common/Generics/StringOut.Tests.cs:277,315`
+  - **Rationale**: Test utility enhancement
+
+- [ ] **T221** - StreamHub Stackoverflow test coverage expansion (Ongoing)
+  - **File**: `tests/indicators/_common/StreamHub/StreamHub.Stackoverflow.Tests.cs:182`
+  - **Rationale**: Ongoing incremental improvement
+
+- [ ] **T223** - Renko StreamHub alternative testing approach (4-6 hours)
+  - **File**: `tests/indicators/m-r/Renko/Renko.StreamHub.Tests.cs:9`
+  - **Rationale**: Test coverage for edge case
+
+- [ ] **T224** - Performance benchmark external data cache model (6-8 hours)
+  - **File**: `tools/performance/Perf.StreamExternal.cs:35`
+  - **Rationale**: Benchmark infrastructure enhancement
+
+- [ ] **T225** - Style comparison benchmark representative indicators (2-3 hours)
+  - **File**: `tools/performance/Perf.StyleComparison.cs:26`
+  - **Rationale**: Benchmark efficiency improvement
+
+- [ ] **T226** - ISeries UnixDate property addition (3-4 hours)
+  - **File**: `src/_common/ISeries.cs:20`
+  - **Rationale**: Interface change, breaking in some scenarios
+
+- [ ] **T227** - QuotePart Use vs ToQuotePart deprecation decision (1-2 hours)
+  - **File**: `src/_common/QuotePart/QuotePart.StaticSeries.cs:41-42`
+  - **Rationale**: API cleanup, non-functional
+
+- [ ] **T228** - IQuotePart rename to IBarPartHub evaluation (2-3 hours)
+  - **File**: `src/_common/QuotePart/IQuotePart.cs:13`
+  - **Rationale**: Naming consistency, part of broader refactoring
+
+### Complex Research & Implementation (v3.2+)
+
+- [ ] **T170 / #1692** - ZigZag StreamHub implementation (TBD)
+  - **Rationale**: Complex algorithmic work requiring human implementation; Series-only acceptable for v3.0
+
+- [ ] **#1323 / #1259** - Heap allocation optimization (Large scope)
+  - **Rationale**: Struct-based Quote type and ArrayPool usage requires architectural discussion
+
+- [ ] **Review Discussion #1018** - Community feedback on state rollback (2-3 hours)
+  - **Rationale**: Evaluate feature requests for future planning
+
+- [ ] **E001-E003** - ZigZag incremental implementation (TBD - complex research)
+  - **Action**: Analyze pivot detection logic for incrementalization
+  - **Related**: T170, #1692
+
+- [ ] **E004-E006** - QuoteHub update semantics (TBD)
+  - **Action**: Design and implement intra-period quote modification support
+  - **Impact**: Enables more advanced streaming scenarios
+  - **Related**: #1585
+
+- [ ] **E007-E008** - ADX DMI property expansion (TBD)
+  - **Action**: Add DMI properties to ADX result classes
+  - **Action**: Update documentation and tests
+
+- [ ] **E009** - BufferList configuration implementation (TBD)
+  - **Action**: Complete BufferList configuration feature
+  - **Related**: [Issue #1831](https://github.com/DaveSkender/Stock.Indicators/issues/1831)
+
+- [ ] **E010** - Composite naming for chained indicators (TBD)
+  - **Action**: Implement naming conventions for chained indicator workflows
+
+---
+Last updated: January 3, 2026
