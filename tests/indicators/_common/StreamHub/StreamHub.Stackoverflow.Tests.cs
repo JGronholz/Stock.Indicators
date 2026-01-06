@@ -259,10 +259,10 @@ public class Stackoverflow : TestBase
     /// <param name="irregular">Is not normal</param>
     private static (string, IReadOnlyList<TOut>, bool) HubRef<TIn, TOut>(
         StreamHub<TIn, TOut> hub, bool irregular = false)
-        where TIn : ISeries
-        where TOut : ISeries
+        where TIn : IReusable, ISeries
+        where TOut : IReusable, ISeries
     {
-        IReadOnlyList<TOut> sut = hub.Cache;
+        IReadOnlyList<TOut> sut = hub.Cache.AsReadOnly();
         return (hub.ToString(), sut, irregular);
     }
 }

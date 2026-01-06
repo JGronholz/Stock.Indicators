@@ -80,9 +80,13 @@ public class Alligator : StaticSeriesTestBase
     [TestMethod]
     public void Condense()
     {
+        // Note: AlligatorResult.Value always returns NaN since it has three separate lines
+        // (Jaw, Teeth, Lips) rather than a single value. We filter results where all
+        // three lines are null instead of using the generic Condense() method.
         IReadOnlyList<AlligatorResult> sut = Quotes
             .ToAlligator()
-            .Condense();
+            .Where(x => x.Jaw is not null || x.Teeth is not null || x.Lips is not null)
+            .ToList();
 
         sut.Should().HaveCount(495);
 

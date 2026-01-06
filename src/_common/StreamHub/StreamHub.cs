@@ -8,7 +8,9 @@ public abstract partial class StreamHub<TIn, TOut> : IStreamHub<TIn, TOut>
     where TIn : IReusable
     where TOut : IReusable
 {
-    private protected StreamHub(IStreamObservable<TIn> provider)
+    private protected StreamHub(
+        IStreamObservable<TIn> provider,
+        ICacheProvider<TOut>? cacheProvider = null)
     {
         // store provider reference
         Provider = provider;
@@ -21,6 +23,9 @@ public abstract partial class StreamHub<TIn, TOut> : IStreamHub<TIn, TOut>
 
         // inherit max cache size
         MaxCacheSize = provider.MaxCacheSize;
+
+        // initialize cache provider
+        Cache = cacheProvider ?? new CacheProvider<TOut>();
     }
 
     /// <inheritdoc/>
@@ -35,7 +40,7 @@ public abstract partial class StreamHub<TIn, TOut> : IStreamHub<TIn, TOut>
     /// <summary>
     /// Gets the cache of stored values (base).
     /// </summary>
-    internal List<TOut> Cache { get; } = [];
+    internal ICacheProvider<TOut> Cache { get; }
 
     /// <summary>
     /// Gets the current count of repeated caching attempts.
