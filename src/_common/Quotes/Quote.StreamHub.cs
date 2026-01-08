@@ -3,8 +3,9 @@ namespace Skender.Stock.Indicators;
 /// <summary>
 /// Streaming hub for managing quotes.
 /// </summary>
-public class QuoteHub
-    : QuoteProvider<IQuote, IQuote>
+public class QuoteHub<TQuote>
+    : QuoteProvider<TQuote, TQuote>
+    where TQuote : IQuote
 {
     /// <summary>
     /// Indicates whether this QuoteHub is standalone (no external provider).
@@ -15,8 +16,10 @@ public class QuoteHub
     /// Initializes a new instance of the <see cref="QuoteHub"/> base, without its own provider.
     /// </summary>
     /// <param name="maxCacheSize">Maximum in-memory cache size.</param>
-    public QuoteHub(int? maxCacheSize = null)
-        : base(new BaseProvider<IQuote>())
+    public QuoteHub(
+        int? maxCacheSize = null,
+        ICacheProvider<TQuote>? cacheProvider = null)
+        : base(new BaseProvider<TQuote>(), cacheProvider)
     {
         _isStandalone = true;
 
@@ -39,16 +42,17 @@ public class QuoteHub
     /// </summary>
     /// <param name="provider">The quote provider.</param>
     public QuoteHub(
-        IQuoteProvider<IQuote> provider)
-        : base(provider)
+        IQuoteProvider<TQuote> provider,
+        ICacheProvider<TQuote>? cacheProvider = null)
+        : base(provider, cacheProvider)
     {
         _isStandalone = false;
         Reinitialize();
     }
 
     /// <inheritdoc/>
-    protected override (IQuote result, int index)
-        ToIndicator(IQuote item, int? indexHint)
+    protected override (TQuote result, int index)
+        ToIndicator(TQuote item, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);
 
@@ -60,14 +64,14 @@ public class QuoteHub
 
     /// <inheritdoc/>
     public override string ToString()
-        => $"QUOTES<{nameof(IQuote)}>: {Quotes.Count} items";
+        => $"QUOTES<{nameof(TQuote)}>: {Quotes.Count} items";
 
     /// <summary>
     /// Handles adding a new quote with special handling for same-timestamp updates
     /// when QuoteHub is standalone (no external provider).
     /// </summary>
     /// <inheritdoc/>
-    public override void OnAdd(IQuote item, bool notify, int? indexHint)
+    public override void OnAdd(TQuote item, bool notify, int? indexHint)
     {
         // for non-standalone QuoteHub, use standard behavior
         if (!_isStandalone)
@@ -77,7 +81,7 @@ public class QuoteHub
         }
 
         // get result and position
-        (IQuote result, int index) = ToIndicator(item, indexHint);
+        (TQuote result, int index) = ToIndicator(item, indexHint);
 
         // check if this is a same-timestamp update (not a new item at the end)
         if (Cache.Count > 0 && index < Cache.Count && Cache[index].Timestamp == result.Timestamp)
@@ -209,7 +213,8 @@ public static partial class Quotes
     /// </summary>
     /// <param name="quoteProvider">The quote provider to convert.</param>
     /// <returns>A new instance of QuoteHub.</returns>
-    public static QuoteHub ToQuoteHub(
-        this IQuoteProvider<IQuote> quoteProvider)
+    public static QuoteHub<TQuote> ToQuoteHub<TQuote>(
+        this IQuoteProvider<TQuote> quoteProvider)
+        where TQuote : IQuote
         => new(quoteProvider);
 }

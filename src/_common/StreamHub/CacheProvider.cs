@@ -25,7 +25,8 @@ public class CacheProvider<T> : List<T>, ICacheProvider<T>
     }
 
     /// <inheritdoc/>
-    IReadOnlyList<T> ICacheProvider<T>.AsReadOnly() => AsReadOnly();
+    //IReadOnlyList<T> ICacheProvider<T>.AsReadOnly() => AsReadOnly();
+    public new IReadOnlyList<T> AsReadOnly() => base.AsReadOnly();
 
     /// <inheritdoc/>
     public bool TryFindIndex(DateTime timestamp, out int index)
