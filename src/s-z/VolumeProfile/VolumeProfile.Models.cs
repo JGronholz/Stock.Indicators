@@ -1,7 +1,7 @@
 namespace Skender.Stock.Indicators;
 
 [Serializable]
-public class VolumeProfileResult : ResultBase
+public record VolumeProfileResult : ISeries
 {
     private VolumeProfileResult? previousResult;
 
@@ -17,7 +17,7 @@ public class VolumeProfileResult : ResultBase
             throw new ArgumentNullException(nameof(quote));
         }
 
-        Date = quote.Date;
+        Timestamp = quote.Timestamp;
         High = quote.High;
         Low = quote.Low;
         Volume = quote.Volume;
@@ -28,6 +28,7 @@ public class VolumeProfileResult : ResultBase
             : new Dictionary<decimal, decimal>();
     }
 
+    public DateTime Timestamp { get; private set; }
     public decimal High { get; private set; }
     public decimal Low { get; private set; }
     public decimal Volume { get; private set; }
@@ -53,11 +54,11 @@ public class VolumeProfileResult : ResultBase
             }
 
             // ensure totals sum exactly to previous total + this.Volume to avoid tiny rounding errors
-            decimal previousTotal = previousResult?._cumulative.Sum(kvp => kvp.Value) ??0M;
-            decimal expectedTotal = previousTotal + this.Volume;
+            decimal previousTotal = previousResult?._cumulative.Sum(kvp => kvp.Value) ?? 0M;
+            decimal expectedTotal = previousTotal + Volume;
             decimal currentTotal = _cumulative.Sum(kvp => kvp.Value);
             decimal diff = expectedTotal - currentTotal;
-            if (diff !=0M && _cumulative.Count >0)
+            if (diff != 0M && _cumulative.Count > 0)
             {
                 decimal maxKey = _cumulative.Keys.Max();
                 _cumulative[maxKey] += diff;

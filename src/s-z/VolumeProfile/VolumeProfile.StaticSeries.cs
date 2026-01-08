@@ -1,12 +1,13 @@
 namespace Skender.Stock.Indicators;
 
-public static partial class Indicator
+public static partial class VolumeProfile
 {
     // Volume Profile
     /// <include file='./info.xml' path='indicator/*' />
     ///
     public static IEnumerable<VolumeProfileResult> GetVolumeProfile(this IEnumerable<IQuote> quotes, decimal precision = 0.001M)
     {
+        ArgumentNullException.ThrowIfNull(quotes);
         ValidateVolumeProfile(precision);
 
         List<VolumeProfileResult> results = new List<VolumeProfileResult>();
