@@ -23,6 +23,18 @@ public abstract partial class StreamHub<TIn, TOut> : IStreamHub<TIn, TOut>
         MaxCacheSize = provider.MaxCacheSize;
     }
 
+    public void asdf()
+    {
+        var provider = new QuoteHub();
+        var hubs = new List<ChainHub<IQuote, IReusable>>();
+
+        var rsiHub = provider.ToRsiHub(14);
+        hubs.Add(rsiHub);
+
+        var macdHub = provider.ToMacdHub(12, 26, 9);
+        hubs.Add(macdHub);
+    }
+
     /// <inheritdoc/>
     public IReadOnlyList<TOut> Results => Cache.AsReadOnly();
 
