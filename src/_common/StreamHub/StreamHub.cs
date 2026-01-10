@@ -26,7 +26,7 @@ public abstract partial class StreamHub<TIn, TOut> : IStreamHub<TIn, TOut>
     public void asdf()
     {
         var provider = new QuoteHub();
-        var hubs = new List<ChainHub<IQuote, IReusable>>();
+        var hubs = new List<IChainProvider<IReusable>>();
 
         var rsiHub = provider.ToRsiHub(14);
         hubs.Add(rsiHub);
