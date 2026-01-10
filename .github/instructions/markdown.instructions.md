@@ -326,8 +326,6 @@ Allowed elements (defined in `.markdownlint-cli2.jsonc`):
 - `> [!WARNING]` — Caution required
 - `> [!CAUTION]` — Danger or risk
 
-> Exception: for docs VitePress website, use native `:::` codeblocks for alerts.
-
 **Tables:** Use pipe-delimited format with alignment:
 
 ```markdown
