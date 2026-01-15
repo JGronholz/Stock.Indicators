@@ -31,7 +31,7 @@ public sealed class StochRsiHub
         int rsiPeriods = 14,
         int stochPeriods = 14,
         int signalPeriods = 3,
-        int smoothPeriods = 1) : base(provider)
+        int smoothPeriods = 1) : base(provider.ToRsiHub(rsiPeriods))
     {
         StochRsi.Validate(rsiPeriods, stochPeriods, signalPeriods, smoothPeriods);
 
@@ -42,8 +42,8 @@ public sealed class StochRsiHub
 
         Name = $"STOCH-RSI({rsiPeriods},{stochPeriods},{signalPeriods},{smoothPeriods})";
 
-        // Create internal RSI hub for incremental RSI calculation
-        rsiHub = provider.ToRsiHub(rsiPeriods);
+        // Store reference to RSI hub (which is now our provider)
+        rsiHub = (RsiHub)Provider;
 
         // Rolling windows for O(1) RSI max/min tracking
         _rsiMaxWindow = new RollingWindowMax<double>(stochPeriods);
@@ -77,24 +77,20 @@ public sealed class StochRsiHub
         double? stochRsi = null;
         double? signal = null;
 
-        // Get RSI value from the internal hub
-        // Safety check: ensure rsiHub.Cache has been populated to index i
-        List<RsiResult> rsiCache = rsiHub.Cache;
-        if (i < rsiCache.Count)
+        // Get RSI value from the provider item (which is an RsiResult)
+        // Since we're now subscribed to RsiHub, items are RsiResults
+        RsiResult rsiResult = (RsiResult)item;
+        double? rsiValue = rsiResult.Rsi;
+
+        // Only process if we have a valid RSI value
+        if (rsiValue.HasValue)
         {
-            RsiResult? rsiResult = rsiCache[i];
-            double? rsiValue = rsiResult?.Rsi;
+            (double? oscillator, double? oscillatorSignal) = UpdateOscillatorState(rsiValue.Value);
 
-            // Only process if we have a valid RSI value
-            if (rsiValue.HasValue)
+            if (oscillator.HasValue)
             {
-                (double? oscillator, double? oscillatorSignal) = UpdateOscillatorState(rsiValue.Value);
-
-                if (oscillator.HasValue)
-                {
-                    stochRsi = oscillator;
-                    signal = oscillatorSignal;
-                }
+                stochRsi = oscillator;
+                signal = oscillatorSignal;
             }
         }
 
