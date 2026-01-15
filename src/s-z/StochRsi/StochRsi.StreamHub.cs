@@ -78,18 +78,23 @@ public sealed class StochRsiHub
         double? signal = null;
 
         // Get RSI value from the internal hub
-        RsiResult? rsiResult = rsiHub.Cache[i];
-        double? rsiValue = rsiResult?.Rsi;
-
-        // Only process if we have a valid RSI value
-        if (rsiValue.HasValue)
+        // Safety check: ensure rsiHub.Cache has been populated to index i
+        List<RsiResult> rsiCache = rsiHub.Cache;
+        if (i < rsiCache.Count)
         {
-            (double? oscillator, double? oscillatorSignal) = UpdateOscillatorState(rsiValue.Value);
+            RsiResult? rsiResult = rsiCache[i];
+            double? rsiValue = rsiResult?.Rsi;
 
-            if (oscillator.HasValue)
+            // Only process if we have a valid RSI value
+            if (rsiValue.HasValue)
             {
-                stochRsi = oscillator;
-                signal = oscillatorSignal;
+                (double? oscillator, double? oscillatorSignal) = UpdateOscillatorState(rsiValue.Value);
+
+                if (oscillator.HasValue)
+                {
+                    stochRsi = oscillator;
+                    signal = oscillatorSignal;
+                }
             }
         }
 
