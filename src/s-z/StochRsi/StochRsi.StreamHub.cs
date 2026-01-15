@@ -7,11 +7,6 @@ public sealed class StochRsiHub
     : ChainHub<IReusable, StochRsiResult>
 {
     /// <summary>
-    /// Internal RSI hub for incremental RSI calculation
-    /// </summary>
-    private readonly RsiHub rsiHub;
-
-    /// <summary>
     /// Rolling windows for O(1) RSI max/min tracking
     /// </summary>
     private readonly RollingWindowMax<double> _rsiMaxWindow;
@@ -41,9 +36,6 @@ public sealed class StochRsiHub
         SmoothPeriods = smoothPeriods;
 
         Name = $"STOCH-RSI({rsiPeriods},{stochPeriods},{signalPeriods},{smoothPeriods})";
-
-        // Store reference to RSI hub (which is now our provider)
-        rsiHub = (RsiHub)Provider;
 
         // Rolling windows for O(1) RSI max/min tracking
         _rsiMaxWindow = new RollingWindowMax<double>(stochPeriods);
@@ -236,5 +228,5 @@ public static partial class StochRsi
         int stochPeriods = 14,
         int signalPeriods = 3,
         int smoothPeriods = 1)
-        => new(chainProvider, rsiPeriods, stochPeriods, signalPeriods, smoothPeriods);
+        => new(chainProvider.ToRsiHub(rsiPeriods), rsiPeriods, stochPeriods, signalPeriods, smoothPeriods);
 }
