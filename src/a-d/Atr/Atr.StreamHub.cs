@@ -37,13 +37,25 @@ public class AtrHub
         AtrResult r;
 
         // re-initialize as average TR, if necessary
-        if (Cache[i - 1].Atr is null && i >= LookbackPeriods)
+        if (i > 0 && Cache.Count >= i && Cache[i - 1].Atr is null && i >= LookbackPeriods)
         {
+            // Ensure loop bounds are valid
+            int startIndex = i - LookbackPeriods + 1;
+            if (startIndex < 1 || i >= ProviderCache.Count)
+            {
+                return (new AtrResult(item.Timestamp), i);
+            }
+
             double sumTr = 0;
             double tr = double.NaN;
 
-            for (int p = i - LookbackPeriods + 1; p <= i; p++)
+            for (int p = startIndex; p <= i; p++)
             {
+                if (p < 1 || p >= ProviderCache.Count)
+                {
+                    continue;
+                }
+
                 tr = Tr.Increment(
                     (double)ProviderCache[p].High,
                     (double)ProviderCache[p].Low,
@@ -64,6 +76,12 @@ public class AtrHub
         // calculate ATR (normally)
         else
         {
+            // Ensure bounds are valid for accessing previous values
+            if (i == 0 || i >= ProviderCache.Count || Cache.Count < i)
+            {
+                return (new AtrResult(item.Timestamp), i);
+            }
+
             r = Atr.Increment(
                 LookbackPeriods,
                 item,

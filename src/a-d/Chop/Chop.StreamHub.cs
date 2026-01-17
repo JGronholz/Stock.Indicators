@@ -41,6 +41,12 @@ public class ChopHub
             return (new ChopResult(item.Timestamp, null), i);
         }
 
+        // Bounds check for accessing previous values
+        if (i >= ProviderCache.Count)
+        {
+            return (new ChopResult(item.Timestamp, null), i);
+        }
+
         double? chop = null;
 
         // Calculate true high, true low, and true range for current period
@@ -116,8 +122,14 @@ public class ChopHub
         int targetIndex = index - 1;
         int startIdx = Math.Max(1, targetIndex + 1 - LookbackPeriods);
 
+        // Ensure upper bounds are valid
+        if (targetIndex >= ProviderCache.Count)
+        {
+            return;
+        }
+
         // Rebuild rolling windows and buffer from ProviderCache
-        for (int p = startIdx; p <= targetIndex; p++)
+        for (int p = startIdx; p <= targetIndex && p < ProviderCache.Count; p++)
         {
             IQuote current = ProviderCache[p];
             double prevClose = (double)ProviderCache[p - 1].Close;

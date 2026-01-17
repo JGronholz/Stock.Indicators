@@ -44,7 +44,7 @@ public class RsiHub
         double currentValue = item.Value;
 
         // Get previous value for gain/loss calculation
-        double prevValue = i > 0 ? ProviderCache[i - 1].Value : double.NaN;
+        double prevValue = i > 0 && i < ProviderCache.Count ? ProviderCache[i - 1].Value : double.NaN;
 
         // Calculate current gain/loss - O(1)
         double gain;
@@ -137,8 +137,13 @@ public class RsiHub
         _avgLoss = sumLoss / LookbackPeriods;
 
         // Apply Wilder's smoothing for subsequent positions up to targetIndex
-        for (int p = LookbackPeriods + 1; p <= targetIndex; p++)
+        for (int p = LookbackPeriods + 1; p <= targetIndex && p < ProviderCache.Count; p++)
         {
+            if (p < 1 || p - 1 >= ProviderCache.Count)
+            {
+                continue;
+            }
+
             double pPrevVal = ProviderCache[p - 1].Value;
             double pCurrVal = ProviderCache[p].Value;
 
@@ -165,7 +170,15 @@ public class RsiHub
         double sumGain = 0;
         double sumLoss = 0;
 
-        for (int p = endIndex - LookbackPeriods + 1; p <= endIndex; p++)
+        int startIndex = endIndex - LookbackPeriods + 1;
+        
+        // Ensure bounds are valid
+        if (startIndex < 1 || endIndex >= ProviderCache.Count)
+        {
+            return (double.NaN, double.NaN);
+        }
+
+        for (int p = startIndex; p <= endIndex && p < ProviderCache.Count; p++)
         {
             double pPrevVal = ProviderCache[p - 1].Value;
             double pCurrVal = ProviderCache[p].Value;
