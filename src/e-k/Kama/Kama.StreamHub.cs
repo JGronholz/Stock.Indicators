@@ -53,7 +53,7 @@ public class KamaHub
         double er;
         double kama;
 
-        if (i > ErPeriods - 1 && i > 0 && Cache.Count >= i && Cache[i - 1].Kama is not null)
+        if (i > ErPeriods - 1 && i > 0 && i < ProviderCache.Count && Cache.Count >= i && Cache[i - 1].Kama is not null)
         {
             double newVal = item.Value;
 
@@ -62,9 +62,15 @@ public class KamaHub
 
             // volatility
             double sumPv = 0;
-            for (int p = i - ErPeriods + 1; p <= i; p++)
+            int startIndex = i - ErPeriods + 1;
+            
+            // Ensure bounds are valid
+            if (startIndex >= 1 && i < ProviderCache.Count)
             {
-                sumPv += Math.Abs(ProviderCache[p].Value - ProviderCache[p - 1].Value);
+                for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
+                {
+                    sumPv += Math.Abs(ProviderCache[p].Value - ProviderCache[p - 1].Value);
+                }
             }
 
             if (sumPv != 0)

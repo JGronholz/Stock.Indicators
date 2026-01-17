@@ -137,7 +137,14 @@ public class VortexHub
 
         // Rebuild buffer from quotes starting at index 1
         int startIdx = Math.Max(1, targetIndex + 1 - LookbackPeriods);
-        for (int p = startIdx; p <= targetIndex; p++)
+        
+        // Ensure upper bounds are valid
+        if (targetIndex >= ProviderCache.Count)
+        {
+            return;
+        }
+        
+        for (int p = startIdx; p <= targetIndex && p < ProviderCache.Count; p++)
         {
             IQuote quote = ProviderCache[p];
             IQuote prevQuote = ProviderCache[p - 1];
