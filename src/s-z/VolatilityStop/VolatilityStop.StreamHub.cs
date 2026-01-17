@@ -65,18 +65,30 @@ public class VolatilityStopHub
             // On the last initialization period, determine trend direction
             if (i == LookbackPeriods - 1)
             {
+                // Ensure bounds are valid
+                if (i >= ProviderCache.Count)
+                {
+                    return (new VolatilityStopResult(item.Timestamp), i);
+                }
+                
                 Sic = (double)ProviderCache[0].Close;
                 double currentClose = (double)item.Close;
                 IsLong = currentClose > Sic;
 
                 // Update sic for all initialization periods based on determined trend
-                for (int j = 0; j <= i; j++)
+                for (int j = 0; j <= i && j < ProviderCache.Count; j++)
                 {
                     double closePriceJ = (double)ProviderCache[j].Close;
                     Sic = IsLong ? Math.Max(Sic, closePriceJ) : Math.Min(Sic, closePriceJ);
                 }
             }
 
+            return (new VolatilityStopResult(item.Timestamp), i);
+        }
+
+        // Ensure bounds are valid for accessing previous values
+        if (i == 0 || i >= ProviderCache.Count)
+        {
             return (new VolatilityStopResult(item.Timestamp), i);
         }
 
@@ -99,16 +111,25 @@ public class VolatilityStopHub
         {
             // Initialize ATR - calculate through previous period
             double sumTr = 0;
+            int startIndex = i - LookbackPeriods + 1;
 
-            for (int p = i - LookbackPeriods + 1; p <= i; p++)
+            // Ensure bounds are valid
+            if (startIndex < 1 || i >= ProviderCache.Count)
             {
-                sumTr += Tr.Increment(
-                    (double)ProviderCache[p].High,
-                    (double)ProviderCache[p].Low,
-                    (double)ProviderCache[p - 1].Close);
+                atr = double.NaN;
             }
+            else
+            {
+                for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
+                {
+                    sumTr += Tr.Increment(
+                        (double)ProviderCache[p].High,
+                        (double)ProviderCache[p].Low,
+                        (double)ProviderCache[p - 1].Close);
+                }
 
-            atr = sumTr / LookbackPeriods;
+                atr = sumTr / LookbackPeriods;
+            }
         }
 
         // Use previous period's ATR for SAR calculation (like Series implementation)
@@ -247,15 +268,25 @@ public class VolatilityStopHub
             else
             {
                 double sumTr = 0;
-                for (int p = j - LookbackPeriods + 1; p <= j; p++)
+                int startIndex = j - LookbackPeriods + 1;
+                
+                // Ensure bounds are valid
+                if (startIndex >= 1 && j < ProviderCache.Count)
                 {
-                    sumTr += Tr.Increment(
-                        (double)ProviderCache[p].High,
-                        (double)ProviderCache[p].Low,
-                        (double)ProviderCache[p - 1].Close);
-                }
+                    for (int p = startIndex; p <= j && p < ProviderCache.Count; p++)
+                    {
+                        sumTr += Tr.Increment(
+                            (double)ProviderCache[p].High,
+                            (double)ProviderCache[p].Low,
+                            (double)ProviderCache[p - 1].Close);
+                    }
 
-                atr = sumTr / LookbackPeriods;
+                    atr = sumTr / LookbackPeriods;
+                }
+                else
+                {
+                    atr = double.NaN;
+                }
             }
 
             PrevAtr = atr;

@@ -72,8 +72,14 @@ public class StarcBandsHub
                 // Initialize ATR: Sum TR from index 1 to AtrPeriods
                 if (i == AtrPeriods)
                 {
+                    // Ensure bounds are valid
+                    if (AtrPeriods >= ProviderCache.Count)
+                    {
+                        return;
+                    }
+                    
                     double sumTr = 0;
-                    for (int p = 1; p <= AtrPeriods; p++)
+                    for (int p = 1; p <= AtrPeriods && p < ProviderCache.Count; p++)
                     {
                         sumTr += Tr.Increment(
                             (double)ProviderCache[p].High,
@@ -86,6 +92,12 @@ public class StarcBandsHub
             }
             else
             {
+                // Ensure bounds are valid
+                if (i >= ProviderCache.Count)
+                {
+                    return;
+                }
+                
                 // Incrementally update ATR using Wilder's smoothing
                 double tr = Tr.Increment(
                     (double)item.High,
@@ -140,39 +152,55 @@ public class StarcBandsHub
         }
         else if (!double.IsNaN(_prevAtr))
         {
-            // Calculate ATR normally using previous ATR
-            AtrResult atrResult = Atr.Increment(AtrPeriods, item, (double)ProviderCache[i - 1].Close, _prevAtr);
-            atr = atrResult.Atr ?? double.NaN;
+            // Ensure bounds are valid
+            if (i >= ProviderCache.Count)
+            {
+                atr = double.NaN;
+            }
+            else
+            {
+                // Calculate ATR normally using previous ATR
+                AtrResult atrResult = Atr.Increment(AtrPeriods, item, (double)ProviderCache[i - 1].Close, _prevAtr);
+                atr = atrResult.Atr ?? double.NaN;
+            }
         }
         else if (i >= AtrPeriods)
         {
-            // Initialize ATR using same method as Series:
-            // Sum TR from index 1 to AtrPeriods, then incrementally update to current index
-            double sumTr = 0;
-
-            // Initial sum from index 1 to AtrPeriods (matching Series behavior)
-            for (int p = 1; p <= AtrPeriods; p++)
+            // Ensure bounds are valid
+            if (AtrPeriods >= ProviderCache.Count || i >= ProviderCache.Count)
             {
-                sumTr += Tr.Increment(
-                    (double)ProviderCache[p].High,
-                    (double)ProviderCache[p].Low,
-                    (double)ProviderCache[p - 1].Close);
+                atr = double.NaN;
             }
-
-            double prevAtr = sumTr / AtrPeriods;
-
-            // Incrementally update ATR from AtrPeriods+1 to i
-            for (int p = AtrPeriods + 1; p <= i; p++)
+            else
             {
-                double tr = Tr.Increment(
-                    (double)ProviderCache[p].High,
-                    (double)ProviderCache[p].Low,
-                    (double)ProviderCache[p - 1].Close);
+                // Initialize ATR using same method as Series:
+                // Sum TR from index 1 to AtrPeriods, then incrementally update to current index
+                double sumTr = 0;
 
-                prevAtr = ((prevAtr * (AtrPeriods - 1)) + tr) / AtrPeriods;
+                // Initial sum from index 1 to AtrPeriods (matching Series behavior)
+                for (int p = 1; p <= AtrPeriods && p < ProviderCache.Count; p++)
+                {
+                    sumTr += Tr.Increment(
+                        (double)ProviderCache[p].High,
+                        (double)ProviderCache[p].Low,
+                        (double)ProviderCache[p - 1].Close);
+                }
+
+                double prevAtr = sumTr / AtrPeriods;
+
+                // Incrementally update ATR from AtrPeriods+1 to i
+                for (int p = AtrPeriods + 1; p <= i && p < ProviderCache.Count; p++)
+                {
+                    double tr = Tr.Increment(
+                        (double)ProviderCache[p].High,
+                        (double)ProviderCache[p].Low,
+                        (double)ProviderCache[p - 1].Close);
+
+                    prevAtr = ((prevAtr * (AtrPeriods - 1)) + tr) / AtrPeriods;
+                }
+
+                atr = prevAtr;
             }
-
-            atr = prevAtr;
         }
         else
         {
