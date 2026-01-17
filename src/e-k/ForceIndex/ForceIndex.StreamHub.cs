@@ -102,7 +102,7 @@ public class ForceIndexHub
 
     /// <inheritdoc/>
     public override IReadOnlyList<ForceIndexResult> AsStaticSeries(IReadOnlyList<IReusable> input)
-        => input.ToForceIndex(LookbackPeriods);
+        => input.Cast<IQuote>().ToList().ToForceIndex(LookbackPeriods);
 }
 public static partial class ForceIndex
 {

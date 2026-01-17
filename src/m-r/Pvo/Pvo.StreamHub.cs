@@ -181,7 +181,7 @@ public class PvoHub
 
     /// <inheritdoc/>
     public override IReadOnlyList<PvoResult> AsStaticSeries(IReadOnlyList<IReusable> input)
-        => input.ToPvo(FastPeriods, SlowPeriods, SignalPeriods);
+        => input.Cast<IQuote>().ToList().ToPvo(FastPeriods, SlowPeriods, SignalPeriods);
 }
 public static partial class Pvo
 {
