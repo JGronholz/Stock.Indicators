@@ -67,8 +67,11 @@ public class WmaHub
 
         return (result, index);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<WmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToWma(LookbackPeriods);
+}
 public static partial class Wma
 {
     /// <summary>

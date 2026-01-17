@@ -147,8 +147,11 @@ public class MfiHub : ChainHub<IQuote, MfiResult>, IMfi
             _prevTruePrice = truePrice;
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<MfiResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToMfi(LookbackPeriods);
+}
 public static partial class Mfi
 {
     /// <summary>

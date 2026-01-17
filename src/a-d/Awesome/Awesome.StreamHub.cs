@@ -68,6 +68,10 @@ public class AwesomeHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<AwesomeResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToAwesome(FastPeriods, SlowPeriods);
 }
 
 public static partial class Awesome

@@ -325,6 +325,10 @@ public class AdxHub
             _prevClose = close;
         }
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<AdxResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToAdx(LookbackPeriods);
 }
 
 public static partial class Adx

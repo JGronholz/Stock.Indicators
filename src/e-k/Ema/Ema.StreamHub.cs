@@ -50,6 +50,10 @@ public class EmaHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<EmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToEma(LookbackPeriods);
 }
 
 public static partial class Ema

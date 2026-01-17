@@ -41,6 +41,10 @@ public class SmaHub
         return (r, i);
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<SmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToSma(LookbackPeriods);
+
 }
 
 public static partial class Sma

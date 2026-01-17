@@ -106,8 +106,11 @@ public class HmaHub
 
         return wma;
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<HmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToHma(LookbackPeriods);
+}
 public static partial class Hma
 {
     /// <summary>

@@ -65,6 +65,10 @@ public class BopHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<BopResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToBop(SmoothPeriods);
 }
 
 public static partial class Bop

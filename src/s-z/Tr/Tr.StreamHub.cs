@@ -36,8 +36,11 @@ public class TrHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<TrResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToTr();
+}
 public static partial class Tr
 {
     /// <summary>

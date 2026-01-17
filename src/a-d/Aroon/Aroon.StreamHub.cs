@@ -69,6 +69,10 @@ public class AroonHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<AroonResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToAroon(LookbackPeriods);
 }
 
 /// <summary>

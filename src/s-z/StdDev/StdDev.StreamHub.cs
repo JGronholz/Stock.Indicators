@@ -70,11 +70,10 @@ public class StdDevHub
         return (r, i);
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<StdDevResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToStdDev(LookbackPeriods);
 }
-
-/// <summary>
-/// Provides methods for creating StdDev hubs.
-/// </summary>
 public static partial class StdDev
 {
     /// <summary>

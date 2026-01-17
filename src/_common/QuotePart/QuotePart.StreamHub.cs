@@ -36,6 +36,10 @@ public class QuotePartHub
     /// <inheritdoc/>
     public override string ToString()
         => $"QUOTE-PART({CandlePartSelection.ToString().ToUpperInvariant()})";
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<TimeValue> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToQuotePart(CandlePartSelection);
 }
 
 public static partial class QuoteParts

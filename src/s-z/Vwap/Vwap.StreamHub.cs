@@ -114,11 +114,11 @@ public class VwapHub : ChainHub<IQuote, VwapResult>
     /// <inheritdoc/>
     public override string ToString() =>
         StartDate.HasValue ? $"VWAP({StartDate.Value:d})" : "VWAP";
-}
 
-/// <summary>
-/// Provides extension methods for creating VWAP hubs.
-/// </summary>
+    /// <inheritdoc/>
+    public override IReadOnlyList<VwapResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToVwap();
+}
 public static partial class Vwap
 {
     /// <summary>

@@ -105,8 +105,11 @@ public class UltimateHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<UltimateResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToUltimate(ShortPeriods, MiddlePeriods, LongPeriods);
+}
 public static partial class Ultimate
 {
     /// <summary>

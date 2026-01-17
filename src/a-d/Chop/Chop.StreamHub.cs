@@ -132,6 +132,10 @@ public class ChopHub
             _sumTrueRange += trueRange;
         }
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<ChopResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToChop(LookbackPeriods);
 }
 
 public static partial class Chop

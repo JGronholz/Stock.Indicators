@@ -45,8 +45,11 @@ public class SmmaHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<SmmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToSmma(LookbackPeriods);
+}
 public static partial class Smma
 {
     /// <summary>

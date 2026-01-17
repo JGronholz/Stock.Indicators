@@ -241,8 +241,10 @@ public class StcHub
         }
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<StcResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToStc(CyclePeriods, FastPeriods, SlowPeriods);
 }
-
 public static partial class Stc
 {
     /// <summary>

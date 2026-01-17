@@ -99,8 +99,11 @@ public class ForceIndexHub
             _sumRawFi += (double)curr.Volume * ((double)curr.Close - (double)prev.Close);
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<ForceIndexResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToForceIndex(LookbackPeriods);
+}
 public static partial class ForceIndex
 {
     /// <summary>

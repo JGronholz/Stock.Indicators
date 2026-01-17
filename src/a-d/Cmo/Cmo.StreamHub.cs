@@ -104,8 +104,11 @@ public class CmoHub
         }
     }
 
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<CmoResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToCmo(LookbackPeriods);
+}
 public static partial class Cmo
 {
     /// <summary>

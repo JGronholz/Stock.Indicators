@@ -216,8 +216,11 @@ public class SlopeHub
             Cache[p] = existing with { Line = line };
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<SlopeResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToSlope(LookbackPeriods);
+}
 public static partial class Slope
 {
     /// <summary>

@@ -102,8 +102,11 @@ public class TemaHub
         lastEma3 = Ema.Increment(K, lastEma3, lastEma2);
         return (3 * lastEma1) - (3 * lastEma2) + lastEma3;
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<TemaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToTema(LookbackPeriods);
+}
 public static partial class Tema
 {
     /// <summary>

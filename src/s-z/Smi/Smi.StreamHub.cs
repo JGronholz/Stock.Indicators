@@ -193,8 +193,10 @@ public sealed class SmiHub
         }
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<SmiResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToSmi(LookbackPeriods, FirstSmoothPeriods, SecondSmoothPeriods, SignalPeriods);
 }
-
 public static partial class Smi
 {
     /// <summary>

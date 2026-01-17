@@ -74,11 +74,10 @@ public class SmaAnalysisHub
         return (r, i);
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<SmaAnalysisResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToSmaAnalysis(LookbackPeriods);
 }
-
-/// <summary>
-/// Provides methods for creating SMA Analysis hubs.
-/// </summary>
 public static partial class SmaAnalysis
 {
     /// <summary>

@@ -216,8 +216,11 @@ public sealed class StochRsiHub
 
         return (k, signal);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<StochRsiResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToStochRsi(RsiPeriods, StochPeriods, SignalPeriods, SmoothPeriods);
+}
 public static partial class StochRsi
 {
     /// <summary>

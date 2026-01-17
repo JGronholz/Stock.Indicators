@@ -33,8 +33,11 @@ public class ObvHub : ChainHub<IQuote, ObvResult>
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<ObvResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToObv();
+}
 public static partial class Obv
 {
     /// <summary>

@@ -283,8 +283,11 @@ public class PmoHub
         prevRocEma = double.NaN;
         prevPmo = double.NaN;
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<PmoResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToPmo(TimePeriods, SmoothPeriods, SignalPeriods);
+}
 public static partial class Pmo
 {
     /// <summary>

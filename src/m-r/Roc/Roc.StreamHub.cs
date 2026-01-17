@@ -54,8 +54,11 @@ public class RocHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<RocResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToRoc(LookbackPeriods);
+}
 public static partial class Roc
 {
     /// <summary>

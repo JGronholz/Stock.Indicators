@@ -204,6 +204,10 @@ public class RsiHub
 
         return 100;
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<RsiResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToRsi(LookbackPeriods);
 }
 
 public static partial class Rsi

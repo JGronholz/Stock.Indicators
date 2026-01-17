@@ -311,8 +311,11 @@ public class ParabolicSarHub
             }
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<ParabolicSarResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToParabolicSar(AccelerationStep, MaxAccelerationFactor);
+}
 public static partial class ParabolicSar
 {
     /// <summary>

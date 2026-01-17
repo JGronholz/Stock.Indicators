@@ -73,6 +73,10 @@ public class AtrHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<AtrResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToAtr(LookbackPeriods);
 }
 
 public static partial class Atr

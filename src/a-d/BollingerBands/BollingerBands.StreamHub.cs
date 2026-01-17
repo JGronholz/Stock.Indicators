@@ -41,6 +41,10 @@ public class BollingerBandsHub
         return (r, i);
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<BollingerBandsResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToBollingerBands(LookbackPeriods);
+
 }
 
 public static partial class BollingerBands

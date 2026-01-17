@@ -87,8 +87,11 @@ public class UlcerIndexHub
         // No stateful fields to rollback.
         // Calculation relies entirely on ProviderCache which is managed by the base class.
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<UlcerIndexResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToUlcerIndex(LookbackPeriods);
+}
 public static partial class UlcerIndex
 {
     /// <summary>

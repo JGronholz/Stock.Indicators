@@ -74,6 +74,10 @@ public class CciHub
             _cciList.Add(quote);
         }
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<CciResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToCci(LookbackPeriods);
 }
 
 /// <summary>

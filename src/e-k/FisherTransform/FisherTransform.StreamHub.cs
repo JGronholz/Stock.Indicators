@@ -154,8 +154,11 @@ public class FisherTransformHub
             }
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<FisherTransformResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToFisherTransform(LookbackPeriods);
+}
 public static partial class FisherTransform
 {
     /// <summary>

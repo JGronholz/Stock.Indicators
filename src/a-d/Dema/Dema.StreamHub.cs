@@ -97,6 +97,10 @@ public class DemaHub
         lastEma2 = Ema.Increment(K, lastEma2, lastEma1);
         return (2 * lastEma1) - lastEma2;
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<DemaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToDema(LookbackPeriods);
 }
 
 public static partial class Dema

@@ -197,11 +197,11 @@ public class DpoHub
         // Call base implementation with adjusted timestamp
         base.Rebuild(fromTimestamp);
     }
-}
 
-/// <summary>
-/// Provides methods for creating DPO hubs.
-/// </summary>
+    /// <inheritdoc/>
+    public override IReadOnlyList<DpoResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToDpo(LookbackPeriods);
+}
 public static partial class Dpo
 {
     /// <summary>

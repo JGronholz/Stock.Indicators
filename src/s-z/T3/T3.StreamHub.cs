@@ -128,8 +128,11 @@ public class T3Hub
 
         return (C1 * lastEma6) + (C2 * lastEma5) + (C3 * lastEma4) + (C4 * lastEma3);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<T3Result> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToT3(LookbackPeriods, VolumeFactor);
+}
 public static partial class T3
 {
     /// <summary>

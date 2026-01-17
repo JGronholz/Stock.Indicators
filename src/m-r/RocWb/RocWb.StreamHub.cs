@@ -204,8 +204,11 @@ public class RocWbHub
             prevEma = rocEma;
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<RocWbResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToRocWb(LookbackPeriods, EmaPeriods, StdDevPeriods);
+}
 public static partial class RocWb
 {
     /// <summary>

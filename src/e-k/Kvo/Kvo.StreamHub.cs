@@ -312,4 +312,8 @@ public class KvoHub
             _prevVfSlowEma = vfSlowEma;
         }
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<KvoResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToKvo(FastPeriods, SlowPeriods, SignalPeriods);
 }

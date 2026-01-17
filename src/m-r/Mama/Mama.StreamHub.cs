@@ -231,8 +231,11 @@ public class MamaHub
             ph.RemoveRange(index, removeCount);
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<MamaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToMama(FastLimit, SlowLimit);
+}
 public static partial class Mama
 {
     /// <summary>

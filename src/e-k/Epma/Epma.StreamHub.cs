@@ -34,8 +34,11 @@ public class EpmaHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<EpmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToEpma(LookbackPeriods);
+}
 public static partial class Epma
 {
     /// <summary>

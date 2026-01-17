@@ -121,6 +121,10 @@ public class ChaikinOscHub
 
         return sum / periods;
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<ChaikinOscResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToChaikinOsc(FastPeriods, SlowPeriods);
 }
 
 public static partial class ChaikinOsc

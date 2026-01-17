@@ -105,8 +105,11 @@ public class HurstHub
             _buffer.Update(LookbackPeriods + 1, item.Value);
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<HurstResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToHurst(LookbackPeriods);
+}
 public static partial class Hurst
 {
     /// <summary>

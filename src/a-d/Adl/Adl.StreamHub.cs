@@ -33,6 +33,10 @@ public class AdlHub : ChainHub<IQuote, AdlResult>
     }
 
     /// <inheritdoc/>
+    public override IReadOnlyList<AdlResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToAdl();
+
+    /// <inheritdoc/>
     public override string ToString() => Cache.Count == 0 ? "ADL" : $"ADL({Cache[0].Timestamp:d})";
 }
 

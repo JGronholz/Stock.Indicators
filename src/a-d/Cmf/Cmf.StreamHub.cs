@@ -84,6 +84,10 @@ public class CmfHub : ChainHub<IQuote, CmfResult>, ICmf
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<CmfResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToCmf(LookbackPeriods);
 }
 
 public static partial class Cmf

@@ -184,8 +184,11 @@ public class HtTrendlineHub
             _ = ToIndicator(reusable, p);
         }
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<HtlResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToHtTrendline();
+}
 public static partial class HtTrendline
 {
     /// <summary>

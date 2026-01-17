@@ -126,8 +126,10 @@ public class TrixHub
         return (lastEma1, lastEma2, lastEma3, lastEma3, trix);
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<TrixResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToTrix(LookbackPeriods);
 }
-
 public static partial class Trix
 {
     /// <summary>

@@ -57,8 +57,11 @@ public class DynamicHub
 
         return (r, i);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<DynamicResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToDynamic(LookbackPeriods, KFactor);
+}
 public static partial class MgDynamic
 {
     /// <summary>

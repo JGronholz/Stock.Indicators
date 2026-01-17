@@ -103,6 +103,10 @@ public class MacdHub
 
         return (r, i);
     }
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<MacdResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToMacd(FastPeriods, SlowPeriods, SignalPeriods);
 }
 
 public static partial class Macd

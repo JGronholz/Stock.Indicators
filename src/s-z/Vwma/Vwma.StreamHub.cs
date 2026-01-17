@@ -60,8 +60,11 @@ public class VwmaHub
 
         return (result, index);
     }
-}
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<VwmaResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToVwma(LookbackPeriods);
+}
 public static partial class Vwma
 {
     /// <summary>
