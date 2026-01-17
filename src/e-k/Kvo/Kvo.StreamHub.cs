@@ -167,7 +167,7 @@ public class KvoHub
             // Signal
             if (i > _slowPeriods + _signalPeriods)
             {
-                double prevSignal = Cache[i - 1].Signal ?? 0;
+                double prevSignal = Cache.Count >= i ? Cache[i - 1].Signal ?? 0 : 0;
                 sig = (kvo * _kSignal) + (prevSignal * (1 - _kSignal));
             }
             else if (i == _slowPeriods + _signalPeriods)

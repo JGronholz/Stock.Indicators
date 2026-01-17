@@ -70,7 +70,7 @@ public class TemaHub
     protected override void RollbackState(DateTime timestamp)
     {
         int i = ProviderCache.IndexGte(timestamp);
-        if (i > LookbackPeriods)
+        if (i > LookbackPeriods && i > 0 && Cache.Count >= i)
         {
             TemaResult prior = Cache[i - 1];
             lastEma1 = prior.Ema1;
