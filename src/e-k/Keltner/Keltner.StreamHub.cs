@@ -92,7 +92,7 @@ public class KeltnerHub
         {
             atr = double.NaN;
         }
-        else if (i > 0 && Cache.Count >= i && Cache[i - 1].Atr is not null)
+        else if (i > 0 && i < ProviderCache.Count && Cache.Count >= i && Cache[i - 1].Atr is not null)
         {
             // Calculate ATR normally using previous ATR
             AtrResult atrResult = Atr.Increment(AtrPeriods, item, (double)ProviderCache[i - 1].Close, Cache[i - 1].Atr);
@@ -102,31 +102,40 @@ public class KeltnerHub
         {
             // Initialize ATR using same method as Series:
             // Sum TR from index 1 to AtrPeriods, then incrementally update to current index
-            double sumTr = 0;
-
-            // Initial sum from index 1 to AtrPeriods (matching Series behavior)
-            for (int p = 1; p <= AtrPeriods; p++)
+            
+            // Ensure bounds are valid
+            if (AtrPeriods >= ProviderCache.Count || i >= ProviderCache.Count)
             {
-                sumTr += Tr.Increment(
-                    (double)ProviderCache[p].High,
-                    (double)ProviderCache[p].Low,
-                    (double)ProviderCache[p - 1].Close);
+                atr = double.NaN;
             }
-
-            double prevAtr = sumTr / AtrPeriods;
-
-            // Incrementally update ATR from AtrPeriods+1 to i
-            for (int p = AtrPeriods + 1; p <= i; p++)
+            else
             {
-                double tr = Tr.Increment(
-                    (double)ProviderCache[p].High,
-                    (double)ProviderCache[p].Low,
-                    (double)ProviderCache[p - 1].Close);
+                double sumTr = 0;
 
-                prevAtr = ((prevAtr * (AtrPeriods - 1)) + tr) / AtrPeriods;
+                // Initial sum from index 1 to AtrPeriods (matching Series behavior)
+                for (int p = 1; p <= AtrPeriods && p < ProviderCache.Count; p++)
+                {
+                    sumTr += Tr.Increment(
+                        (double)ProviderCache[p].High,
+                        (double)ProviderCache[p].Low,
+                        (double)ProviderCache[p - 1].Close);
+                }
+
+                double prevAtr = sumTr / AtrPeriods;
+
+                // Incrementally update ATR from AtrPeriods+1 to i
+                for (int p = AtrPeriods + 1; p <= i && p < ProviderCache.Count; p++)
+                {
+                    double tr = Tr.Increment(
+                        (double)ProviderCache[p].High,
+                        (double)ProviderCache[p].Low,
+                        (double)ProviderCache[p - 1].Close);
+
+                    prevAtr = ((prevAtr * (AtrPeriods - 1)) + tr) / AtrPeriods;
+                }
+
+                atr = prevAtr;
             }
-
-            atr = prevAtr;
         }
         else
         {

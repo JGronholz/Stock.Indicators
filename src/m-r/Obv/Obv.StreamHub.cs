@@ -20,8 +20,8 @@ public class ObvHub : ChainHub<IQuote, ObvResult>
         int i = indexHint ?? ProviderCache.IndexOf(item, true);
 
         // Get previous close and OBV values for calculation
-        double prevClose = i > 0 ? (double)ProviderCache[i - 1].Close : double.NaN;
-        double prevObv = i > 0 ? Cache[i - 1].Value : 0;
+        double prevClose = i > 0 && i < ProviderCache.Count ? (double)ProviderCache[i - 1].Close : double.NaN;
+        double prevObv = i > 0 && Cache.Count >= i ? Cache[i - 1].Value : 0;
 
         // Calculate OBV using the Increment method
         ObvResult r = Obv.Increment(
