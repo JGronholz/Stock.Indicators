@@ -72,6 +72,16 @@ public class QuoteAggregatorHub
     public TimeSpan AggregationPeriod { get; }
 
     /// <inheritdoc/>
+    public override IReadOnlyList<IQuote> AsStaticSeries(IReadOnlyList<IQuote> input)
+    {
+        // Aggregator doesn't have a static series method
+        // Use the streaming interface for aggregation
+        throw new NotImplementedException(
+            "AsStaticSeries not supported for QuoteAggregatorHub. " +
+            "Use the streaming hub interface to aggregate quotes.");
+    }
+
+    /// <inheritdoc/>
     public override void OnAdd(IQuote item, bool notify, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);

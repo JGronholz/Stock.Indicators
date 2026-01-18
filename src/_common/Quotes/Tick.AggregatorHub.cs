@@ -73,6 +73,16 @@ public class TickAggregatorHub
     public TimeSpan AggregationPeriod { get; }
 
     /// <inheritdoc/>
+    public override IReadOnlyList<IQuote> AsStaticSeries(IReadOnlyList<ITick> input)
+    {
+        // Tick aggregator doesn't have a static series method
+        // Use the streaming interface for tick aggregation
+        throw new NotImplementedException(
+            "AsStaticSeries not supported for TickAggregatorHub. " +
+            "Use the streaming hub interface to aggregate ticks.");
+    }
+
+    /// <inheritdoc/>
     public override void OnAdd(ITick item, bool notify, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);

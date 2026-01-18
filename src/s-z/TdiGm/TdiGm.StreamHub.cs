@@ -59,6 +59,10 @@ public sealed class TdiGmHub
         Reinitialize();
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<TdiGmResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToTdiGm(RsiPeriod, BandLength, FastLength, SlowLength);
+
     /// <summary>
     /// Converts an input item to a TdiGmResult indicator value.
     /// Called by StreamHub base class for each item in ProviderCache.
