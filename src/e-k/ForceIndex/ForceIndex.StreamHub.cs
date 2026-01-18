@@ -4,7 +4,7 @@ namespace Skender.Stock.Indicators;
 /// Provides streaming hub for Force Index calculations.
 /// </summary>
 public class ForceIndexHub
-    : ChainHub<IReusable, ForceIndexResult>, IForceIndex
+    : ChainHub<IQuote, ForceIndexResult>, IForceIndex
 {
     private readonly double _k;
     private double _sumRawFi;
@@ -23,8 +23,8 @@ public class ForceIndexHub
 
 
     /// <inheritdoc/>
-    public override IReadOnlyList<ForceIndexResult> AsStaticSeries(IReadOnlyList<IReusable> input)
-        => ((IReadOnlyList<IQuote>)input).ToForceIndex(LookbackPeriods);
+    public override IReadOnlyList<ForceIndexResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToForceIndex(LookbackPeriods);
     /// <inheritdoc/>
     public int LookbackPeriods { get; init; }
 
@@ -33,7 +33,7 @@ public class ForceIndexHub
 
     /// <inheritdoc />
     protected override (ForceIndexResult result, int index)
-        ToIndicator(IReusable item, int? indexHint)
+        ToIndicator(IQuote item, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);
         int i = indexHint ?? ProviderCache.IndexOf(item, true);

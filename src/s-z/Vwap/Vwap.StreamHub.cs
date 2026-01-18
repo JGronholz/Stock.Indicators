@@ -23,7 +23,7 @@ public class VwapHub : ChainHub<IQuote, VwapResult>
 
     /// <inheritdoc/>
     public override IReadOnlyList<VwapResult> AsStaticSeries(IReadOnlyList<IQuote> input)
-        => input.ToVwap();
+        => StartDate.HasValue ? input.ToVwap(StartDate.Value) : input.ToVwap();
     /// <inheritdoc/>
     public DateTime? StartDate { get; private set; }
 

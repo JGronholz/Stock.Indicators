@@ -2,7 +2,7 @@ namespace Skender.Stock.Indicators;
 
 /// <inheritdoc />
 public class UltimateHub
-    : ChainHub<IReusable, UltimateResult>, IUltimate
+    : ChainHub<IQuote, UltimateResult>, IUltimate
 {
     internal UltimateHub(
         IQuoteProvider<IQuote> provider,
@@ -22,8 +22,8 @@ public class UltimateHub
 
 
     /// <inheritdoc/>
-    public override IReadOnlyList<UltimateResult> AsStaticSeries(IReadOnlyList<IReusable> input)
-        => ((IReadOnlyList<IQuote>)input).ToUltimate(ShortPeriods, MiddlePeriods, LongPeriods);
+    public override IReadOnlyList<UltimateResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToUltimate(ShortPeriods, MiddlePeriods, LongPeriods);
     /// <inheritdoc/>
     public int ShortPeriods { get; init; }
 
@@ -35,7 +35,7 @@ public class UltimateHub
 
     /// <inheritdoc/>
     protected override (UltimateResult result, int index)
-        ToIndicator(IReusable item, int? indexHint)
+        ToIndicator(IQuote item, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);
         int i = indexHint ?? ProviderCache.IndexOf(item, true);
