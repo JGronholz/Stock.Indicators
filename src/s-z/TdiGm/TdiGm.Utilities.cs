@@ -27,7 +27,7 @@ public static partial class TdiGm
             throw new ArgumentOutOfRangeException(nameof(rsiPeriod), rsiPeriod,
                 "RSI period must not exceed 250.");
         }
-        
+
         if (bandLength <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(bandLength), bandLength,

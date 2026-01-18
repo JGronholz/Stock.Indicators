@@ -20,7 +20,7 @@
  </item>
  <item>
  <term>Precision (bucket width)</term>
- <description>The <see cref="precision"/> parameter controls the width of each price slice (bucket). Prices are grouped by the specified precision to accumulate volumes per bucket. Choose an appropriate precision for the instrument's tick size and the desired granularity (a smaller precision yields more buckets).</description>
+ <description>The <paramref name="precision"/> parameter controls the width of each price slice (bucket). Prices are grouped by the specified precision to accumulate volumes per bucket. Choose an appropriate precision for the instrument's tick size and the desired granularity (a smaller precision yields more buckets).</description>
  </item>
  <item>
  <term>Incremental cumulative totals</term>
@@ -49,7 +49,7 @@
  <description>Using a <c>Dictionary&lt;decimal,decimal&gt;</c> keyed by raw price can create many buckets if prices have high precision. If you expect high-granularity prices, normalize prices to a grid or increase the precision parameter to limit bucket count.</description>
  </item>
  <item>
- <term>Serialization & public API</term>
+ <term>Serialization &amp; public API</term>
  <description>Because this change is currently on an early feature branch, no backward compatibility shims were added for consumers. If/when this lands in main and becomes a public release, consider adding short-lived compatibility facades or documenting the rename in CHANGELOGs to help downstream users migrate from "VRVP" to "VolumeProfile".</description>
  </item>
  </list>

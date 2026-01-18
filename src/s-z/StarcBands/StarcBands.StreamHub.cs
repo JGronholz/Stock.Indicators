@@ -81,7 +81,7 @@ public class StarcBandsHub
                     {
                         return;
                     }
-                    
+
                     double sumTr = 0;
                     for (int p = 1; p <= AtrPeriods && p < ProviderCache.Count; p++)
                     {
@@ -101,7 +101,7 @@ public class StarcBandsHub
                 {
                     return;
                 }
-                
+
                 // Incrementally update ATR using Wilder's smoothing
                 double tr = Tr.Increment(
                     (double)item.High,

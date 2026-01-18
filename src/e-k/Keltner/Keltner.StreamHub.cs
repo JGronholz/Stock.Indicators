@@ -106,7 +106,7 @@ public class KeltnerHub
         {
             // Initialize ATR using same method as Series:
             // Sum TR from index 1 to AtrPeriods, then incrementally update to current index
-            
+
             // Ensure bounds are valid
             if (AtrPeriods >= ProviderCache.Count || i >= ProviderCache.Count)
             {

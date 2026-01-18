@@ -220,7 +220,7 @@ public class SuperTrendHub
                 // Initialize ATR
                 double sumTr = 0;
                 int startIndex = i - LookbackPeriods + 1;
-                
+
                 // Ensure bounds are valid
                 if (startIndex >= 1 && i < ProviderCache.Count)
                 {

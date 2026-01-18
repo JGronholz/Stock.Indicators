@@ -58,9 +58,16 @@ public class TdiGmList : BufferList<TdiGmResult>, IIncrementFromChain, ITdiGm
     )
         : this(rsiPeriod, bandLength, fastLength, slowLength) => Add(values);
 
+    /// <inheritdoc />
     public int RsiPeriod { get; init; }
+
+    /// <inheritdoc />
     public int BandLength { get; init; }
+
+    /// <inheritdoc />
     public int FastLength { get; init; }
+
+    /// <inheritdoc />
     public int SlowLength { get; init; }
 
     /// <inheritdoc />

@@ -175,7 +175,7 @@ public class RsiHub
         double sumLoss = 0;
 
         int startIndex = endIndex - LookbackPeriods + 1;
-        
+
         // Ensure bounds are valid
         if (startIndex < 1 || endIndex >= ProviderCache.Count)
         {
