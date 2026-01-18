@@ -49,9 +49,9 @@ public class AtrHub
             double sumTr = 0;
             double tr = double.NaN;
 
-            for (int p = startIndex; p <= i; p++)
+            for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
             {
-                if (p < 1 || p >= ProviderCache.Count)
+                if (p < 1)
                 {
                     continue;
                 }
@@ -77,7 +77,7 @@ public class AtrHub
         else
         {
             // Ensure bounds are valid for accessing previous values
-            if (i == 0 || i >= ProviderCache.Count || Cache.Count < i)
+            if (i >= ProviderCache.Count || Cache.Count < i)
             {
                 return (new AtrResult(item.Timestamp), i);
             }
