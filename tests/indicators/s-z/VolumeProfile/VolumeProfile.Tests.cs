@@ -11,18 +11,18 @@ public class VpvrTests : TestBase
     [TestMethod]
     public void Standard()
     {
-        List<VolumeProfileResult> results = quotes
+        List<VolumeProfileResult> results = Quotes
         .GetVolumeProfile(0.01M)
         .ToList();
 
         // proper quantities
-        Assert.AreEqual(quotes.Count(), results.Count);
+        Assert.AreEqual(Quotes.Count(), results.Count);
 
         // dates align with source quotes
         int i = 0;
-        foreach (Quote q in quotes)
+        foreach (Quote q in Quotes)
         {
-            Assert.AreEqual(q.Date, results[i].Date);
+            Assert.AreEqual(q.Timestamp, results[i].Timestamp);
             i++;
         }
 
@@ -34,7 +34,7 @@ public class VpvrTests : TestBase
         }
 
         // cumulative profile on the last result should equal the total volume of all quotes
-        decimal expectedTotal = quotes.Sum(q => q.Volume);
+        decimal expectedTotal = Quotes.Sum(q => q.Volume);
         VolumeProfileResult last = results.LastOrDefault();
         Assert.IsNotNull(last);
         decimal cumulativeSum = last.CumulativeVolumeProfile.Sum(v => v.Volume);
@@ -44,7 +44,7 @@ public class VpvrTests : TestBase
     [TestMethod]
     public void NoQuotes()
     {
-        List<VolumeProfileResult> r = noquotes
+        List<VolumeProfileResult> r = Noquotes
         .GetVolumeProfile(0.01M)
         .ToList();
 
@@ -54,16 +54,17 @@ public class VpvrTests : TestBase
     [TestMethod]
     public void Exceptions()
     {
-        Assert.ThrowsException<ArgumentOutOfRangeException>(() => quotes.GetVolumeProfile(0M).ToList());
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(
+            static () => Quotes.GetVolumeProfile(0M).ToList());
     }
 
     [TestMethod]
     public void ZeroWidthRange()
     {
-        List<Quote> single = new List<Quote>
-        {
-            new Quote { Date = DateTime.Parse("2020-01-01"), Open =100m, High =100m, Low =100m, Close =100m, Volume =1000m }
-        };
+        List<Quote> single =
+        [
+            new(DateTime.Parse("2020-01-01", invariantCulture), 100m, 100m, 100m, 100m, 1000m)
+        ];
 
         List<VolumeProfileResult> results = single.GetVolumeProfile(0.01M).ToList();
         Assert.AreEqual(1, results.Count);
@@ -77,11 +78,11 @@ public class VpvrTests : TestBase
     [TestMethod]
     public void CumulativeAcrossChain()
     {
-        List<Quote> list = new List<Quote>
-        {
-            new Quote { Date = DateTime.Parse("2020-01-01"), Open =10m, High =12m, Low =10m, Close =11m, Volume =100m },
-            new Quote { Date = DateTime.Parse("2020-01-02"), Open =11m, High =13m, Low =11m, Close =12m, Volume =200m }
-        };
+        List<Quote> list =
+        [
+            new(DateTime.Parse("2020-01-01", invariantCulture), 10m, 12m, 10m, 11m, 100m),
+            new(DateTime.Parse("2020-01-02", invariantCulture), 11m, 13m, 11m, 12m, 200m)
+        ];
 
         List<VolumeProfileResult> results = list.GetVolumeProfile(1m).ToList();
         Assert.AreEqual(2, results.Count);
@@ -96,10 +97,10 @@ public class VpvrTests : TestBase
     [TestMethod]
     public void PrecisionBinsCount()
     {
-        List<Quote> q = new List<Quote>
-        {
-            new Quote { Date = DateTime.Parse("2020-01-01"), Open =10m, High =12m, Low =10m, Close =11m, Volume =100m }
-        };
+        List<Quote> q =
+        [
+            new(DateTime.Parse("2020-01-01", invariantCulture), 10m, 12m, 10m, 11m, 100m)
+        ];
 
         VolumeProfileResult r1 = q.GetVolumeProfile(1m).First();
         Assert.AreEqual(3, r1.VolumeProfile.Count()); //10,11,12
