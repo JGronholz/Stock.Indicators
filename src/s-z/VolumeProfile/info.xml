@@ -20,7 +20,7 @@
  </item>
  <item>
  <term>Precision (bucket width)</term>
- <description>The <see cref="precision"/> parameter controls the width of each price slice (bucket). Prices are grouped by the specified precision to accumulate volumes per bucket. Choose an appropriate precision for the instrument's tick size and the desired granularity (a smaller precision yields more buckets).</description>
+ <description>The <paramref name="precision"/> parameter controls the width of each price slice (bucket). Prices are grouped by the specified precision to accumulate volumes per bucket. Choose an appropriate precision for the instrument's tick size and the desired granularity (a smaller precision yields more buckets).</description>
  </item>
  <item>
  <term>Incremental cumulative totals</term>
