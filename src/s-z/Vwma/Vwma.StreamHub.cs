@@ -4,7 +4,7 @@ namespace Skender.Stock.Indicators;
 /// Provides methods for creating VWMA hubs.
 /// </summary>
 public class VwmaHub
-    : ChainHub<IReusable, VwmaResult>, IVwma
+    : ChainHub<IQuote, VwmaResult>, IVwma
 {
     internal VwmaHub(
         IQuoteProvider<IQuote> provider,
@@ -17,6 +17,10 @@ public class VwmaHub
         Reinitialize();
     }
 
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<VwmaResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToVwma(LookbackPeriods);
     /// <inheritdoc/>
     public int LookbackPeriods { get; init; }
 
@@ -26,7 +30,7 @@ public class VwmaHub
 
     /// <inheritdoc />
     protected override (VwmaResult result, int index)
-        ToIndicator(IReusable item, int? indexHint)
+        ToIndicator(IQuote item, int? indexHint)
     {
         ArgumentNullException.ThrowIfNull(item);
         int index = indexHint ?? ProviderCache.IndexOf(item, true);
