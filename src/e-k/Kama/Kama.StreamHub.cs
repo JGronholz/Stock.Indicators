@@ -67,7 +67,7 @@ public class KamaHub
             // volatility
             double sumPv = 0;
             int startIndex = i - ErPeriods + 1;
-            
+
             // Ensure bounds are valid
             if (startIndex >= 1 && i < ProviderCache.Count)
             {

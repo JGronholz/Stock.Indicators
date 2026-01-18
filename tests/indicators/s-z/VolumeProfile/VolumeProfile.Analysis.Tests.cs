@@ -1,8 +1,9 @@
-namespace Tests.Indicators;
 
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Tests.Indicators;
 
 [TestClass]
 public class VpvrAnalysisTests : TestBase
@@ -16,7 +17,7 @@ public class VpvrAnalysisTests : TestBase
             .ToList();
 
         // proper quantities
-        Assert.AreEqual(502, results.Count);
+        Assert.HasCount(502, results);
 
         // at least some bins exist for the last result
         var last = results.Last();
@@ -34,13 +35,13 @@ public class VpvrAnalysisTests : TestBase
         Assert.AreEqual(maxVolume, top.Volume);
 
         // basic usage sanity
-        Assert.AreEqual(502, results.Count);
+        Assert.HasCount(502, results);
 
         // Emit values for regression snapshot
         Console.WriteLine($"TOTAL_VOLUME,{expectedTotal}");
         Console.WriteLine($"CUMULATIVE_BINS,{last.CumulativeVolumeProfile.Count()}");
         Console.WriteLine($"TOP_PRICE,{top.Price}");
         Console.WriteLine($"TOP_VOLUME,{top.Volume}");
-        Console.WriteLine($"LAST_DATE,{last.Timestamp:MM/dd/yyyy}");
+        Console.WriteLine($"LAST_DATE,{last.Timestamp.ToString("MM/dd/yyyy", invariantCulture)}");
     }
 }

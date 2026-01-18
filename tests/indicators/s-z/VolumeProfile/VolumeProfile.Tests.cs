@@ -1,9 +1,10 @@
-namespace Tests.Indicators;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+namespace Tests.Indicators;
 
 [TestClass]
 public class VpvrTests : TestBase
@@ -16,7 +17,7 @@ public class VpvrTests : TestBase
         .ToList();
 
         // proper quantities
-        Assert.AreEqual(Quotes.Count(), results.Count);
+        Assert.HasCount(Quotes.Count(), results);
 
         // dates align with source quotes
         int i = 0;
@@ -48,14 +49,15 @@ public class VpvrTests : TestBase
         .GetVolumeProfile(0.01M)
         .ToList();
 
-        Assert.AreEqual(0, r.Count);
+        Assert.IsEmpty(r);
     }
 
     [TestMethod]
     public void Exceptions()
     {
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(
-            static () => Quotes.GetVolumeProfile(0M).ToList());
+            static () => Quotes.GetVolumeProfile(0M).ToList()
+        );
     }
 
     [TestMethod]
@@ -67,7 +69,7 @@ public class VpvrTests : TestBase
         ];
 
         List<VolumeProfileResult> results = single.GetVolumeProfile(0.01M).ToList();
-        Assert.AreEqual(1, results.Count);
+        Assert.HasCount(1, results);
 
         VolumeProfileResult r = results[0];
         Assert.AreEqual(1, r.VolumeProfile.Count());
@@ -85,7 +87,7 @@ public class VpvrTests : TestBase
         ];
 
         List<VolumeProfileResult> results = list.GetVolumeProfile(1m).ToList();
-        Assert.AreEqual(2, results.Count);
+        Assert.HasCount(2, results);
 
         Assert.AreEqual(100m, results[0].VolumeProfile.Sum(v => v.Volume));
         Assert.AreEqual(200m, results[1].VolumeProfile.Sum(v => v.Volume));

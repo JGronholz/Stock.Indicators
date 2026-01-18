@@ -38,7 +38,7 @@ public class AroonHub
         if (i >= LookbackPeriods)
         {
             int startIndex = i - LookbackPeriods;
-            
+
             // Ensure bounds are valid
             if (startIndex < 0 || i >= ProviderCache.Count)
             {

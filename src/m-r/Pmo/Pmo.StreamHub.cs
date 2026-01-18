@@ -237,13 +237,13 @@ public class PmoHub
     {
         double sum = 0;
         int startIndex = endIndex - TimePeriods + 1;
-        
+
         // Ensure bounds are valid
         if (startIndex < 1 || endIndex >= ProviderCache.Count)
         {
             return double.NaN;
         }
-        
+
         for (int p = startIndex; p <= endIndex && p < ProviderCache.Count; p++)
         {
             double pCurrVal = ProviderCache[p].Value;
@@ -262,7 +262,7 @@ public class PmoHub
         double tempPrevRocEma = double.NaN;
 
         int startIndex = endIndex - SmoothPeriods + 1;
-        
+
         // Ensure bounds are valid
         if (startIndex < 1 || endIndex >= ProviderCache.Count)
         {
