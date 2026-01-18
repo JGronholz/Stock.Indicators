@@ -1,22 +1,32 @@
 namespace Skender.Stock.Indicators;
 
 /// <summary>
+/// <para>
 /// TDIGM (Traders Dynamic Index [Goldminds]) streaming hub implementation.
 /// Derives from ChainHub to enable streaming computation and chaining following Skender v3 pattern.
-/// 
+/// </para>
+/// <para>
 /// Computation pipeline using chained hubs:
 /// 1. RsiHub(rsiPeriod) on input quotes → RSI values
 /// 2. SmaHub(bandLength) on RSI values → middle band
 /// 3. StdDevHub(bandLength) on RSI values → used to calculate upper/lower bands with 1.6185 multiplier
 /// 4. SmaHub(fastLength) on RSI values → fast MA
 /// 5. SmaHub(slowLength) on RSI values → slow MA
+/// </para>
 /// </summary>
 public sealed class TdiGmHub
     : ChainHub<IReusable, TdiGmResult>, ITdiGm
 {
+    /// <inheritdoc />
     public int RsiPeriod { get; init; }
+
+    /// <inheritdoc />
     public int BandLength { get; init; }
+
+    /// <inheritdoc />
     public int FastLength { get; init; }
+
+    /// <inheritdoc />
     public int SlowLength { get; init; }
 
     // Chained hubs for efficient computation
@@ -59,6 +69,10 @@ public sealed class TdiGmHub
         Reinitialize();
     }
 
+    /// <inheritdoc/>
+    public override IReadOnlyList<TdiGmResult> AsStaticSeries(IReadOnlyList<IReusable> input)
+        => input.ToTdiGm(RsiPeriod, BandLength, FastLength, SlowLength);
+
     /// <summary>
     /// Converts an input item to a TdiGmResult indicator value.
     /// Called by StreamHub base class for each item in ProviderCache.
@@ -74,10 +88,10 @@ public sealed class TdiGmHub
 
         // Get the latest results from each chained hub
         // Each hub has already computed its value for this index
-        var middleBandResult = _middleBandHub.Results[^1];
-        var stdDevResult = _stdDevHub.Results[^1];
-        var fastMaResult = _fastMaHub.Results[^1];
-        var slowMaResult = _slowMaHub.Results[^1];
+        SmaResult middleBandResult = _middleBandHub.Results[^1];
+        StdDevResult stdDevResult = _stdDevHub.Results[^1];
+        SmaResult fastMaResult = _fastMaHub.Results[^1];
+        SmaResult slowMaResult = _slowMaHub.Results[^1];
 
         // Calculate TDIGM bands using the hub results
         double? upper = null;
@@ -86,9 +100,9 @@ public sealed class TdiGmHub
 
         if (middleBandResult?.Sma != null && stdDevResult?.StdDev != null)
         {
-            var ma = middleBandResult.Sma.Value;
-            var stdDev = stdDevResult.StdDev.Value;
-            var offset = 1.6185 * stdDev;
+            double ma = middleBandResult.Sma.Value;
+            double stdDev = stdDevResult.StdDev.Value;
+            double offset = 1.6185 * stdDev;
 
             upper = ma + offset;
             lower = ma - offset;
@@ -96,7 +110,7 @@ public sealed class TdiGmHub
         }
 
         // Create the result
-        var result = new TdiGmResult() {
+        TdiGmResult result = new() {
             Timestamp = timestamp,
             Upper = upper,
             Lower = lower,

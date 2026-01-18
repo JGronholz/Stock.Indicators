@@ -53,6 +53,13 @@ public class TickHub
     }
 
     /// <inheritdoc/>
+    public override IReadOnlyList<ITick> AsStaticSeries(IReadOnlyList<ITick> input)
+    {
+        // TickHub is a pass-through container, no transformation
+        return input;
+    }
+
+    /// <inheritdoc/>
     protected override (ITick result, int index)
         ToIndicator(ITick item, int? indexHint)
     {
@@ -169,6 +176,9 @@ public class TickHub
     }
 }
 
+/// <summary>
+/// Extension methods for tick data aggregation and processing.
+/// </summary>
 public static partial class Ticks
 {
     /// <summary>

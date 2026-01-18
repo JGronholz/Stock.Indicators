@@ -39,8 +39,14 @@ public class ChandelierHub
 
 
     /// <inheritdoc/>
-    public override IReadOnlyList<ChandelierResult> AsStaticSeries(IReadOnlyList<IQuote> input)
-        => input.ToChandelier(LookbackPeriods, Multiplier, Type);
+    public override IReadOnlyList<ChandelierResult> AsStaticSeries(IReadOnlyList<AtrResult> input)
+    {
+        // Extract quotes from ATR results (ATR is calculated from quotes)
+        // We need the original quote data to calculate Chandelier Exit
+        throw new NotImplementedException(
+            "AsStaticSeries not yet implemented for Chandelier. " +
+            "Use the static ToChandelier method with quote data instead.");
+    }
     /// <inheritdoc/>
     public int LookbackPeriods { get; init; }
 

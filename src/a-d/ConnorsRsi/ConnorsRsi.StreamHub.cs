@@ -39,8 +39,14 @@ public class ConnorsRsiHub
 
 
     /// <inheritdoc/>
-    public override IReadOnlyList<ConnorsRsiResult> AsStaticSeries(IReadOnlyList<IReusable> input)
-        => input.ToConnorsRsi(RsiPeriods, StreakPeriods, RankPeriods);
+    public override IReadOnlyList<ConnorsRsiResult> AsStaticSeries(IReadOnlyList<RsiResult> input)
+    {
+        // ConnorsRsi needs original quote data, not just RSI results
+        // Extract quotes from RSI provider if available, otherwise throw
+        throw new NotImplementedException(
+            "AsStaticSeries not yet implemented for ConnorsRsi. " +
+            "Use the static ToConnorsRsi method with quote data instead.");
+    }
     /// <inheritdoc/>
     public int RsiPeriods { get; init; }
 

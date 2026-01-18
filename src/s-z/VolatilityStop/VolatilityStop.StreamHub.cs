@@ -74,7 +74,7 @@ public class VolatilityStopHub
                 {
                     return (new VolatilityStopResult(item.Timestamp), i);
                 }
-                
+
                 Sic = (double)ProviderCache[0].Close;
                 double currentClose = (double)item.Close;
                 IsLong = currentClose > Sic;
@@ -273,7 +273,7 @@ public class VolatilityStopHub
             {
                 double sumTr = 0;
                 int startIndex = j - LookbackPeriods + 1;
-                
+
                 // Ensure bounds are valid
                 if (startIndex >= 1 && j < ProviderCache.Count)
                 {
