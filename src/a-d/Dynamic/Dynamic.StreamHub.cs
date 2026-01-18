@@ -46,6 +46,12 @@ public class DynamicHub
             return (firstResult, i);
         }
 
+        // Bounds check for accessing previous values
+        if (Cache.Count < i || i >= ProviderCache.Count)
+        {
+            return (new DynamicResult(item.Timestamp, null), i);
+        }
+
         // calculate dynamic
         double prevDyn = Cache[i - 1].Dynamic ?? ProviderCache[i - 1].Value;
         double dyn = MgDynamic.Increment(

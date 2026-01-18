@@ -31,7 +31,7 @@ public class AdlHub : ChainHub<IQuote, AdlResult>
             item.Low,
             item.Close,
             item.Volume,
-            i > 0 ? Cache[i - 1].Value : 0);
+            i > 0 && Cache.Count >= i ? Cache[i - 1].Value : 0);
 
         return (r, i);
     }

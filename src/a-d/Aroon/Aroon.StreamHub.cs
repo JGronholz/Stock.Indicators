@@ -37,13 +37,21 @@ public class AroonHub
         // Calculate Aroon when we have enough data
         if (i >= LookbackPeriods)
         {
+            int startIndex = i - LookbackPeriods;
+            
+            // Ensure bounds are valid
+            if (startIndex < 0 || i >= ProviderCache.Count)
+            {
+                return (new AroonResult(item.Timestamp, null, null, null), i);
+            }
+
             decimal lastHighPrice = 0;
             decimal lastLowPrice = decimal.MaxValue;
             int lastHighIndex = 0;
             int lastLowIndex = 0;
 
             // Look back over the specified period
-            for (int p = i - LookbackPeriods; p <= i; p++)
+            for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
             {
                 IQuote d = ProviderCache[p];
 

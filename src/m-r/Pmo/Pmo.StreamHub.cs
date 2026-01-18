@@ -53,7 +53,7 @@ public class PmoHub
         int i = indexHint ?? ProviderCache.IndexOf(item, true);
 
         double currentValue = item.Value;
-        double prevValue = i > 0 ? ProviderCache[i - 1].Value : double.NaN;
+        double prevValue = i > 0 && i < ProviderCache.Count ? ProviderCache[i - 1].Value : double.NaN;
 
         // Calculate rate of change (ROC)
         double roc = CalculateRoc(currentValue, prevValue);
@@ -100,10 +100,10 @@ public class PmoHub
         // Need to store PMO values for Signal calculation
         double[] pmoValues = new double[index];
 
-        for (int p = 0; p < index; p++)
+        for (int p = 0; p < index && p < ProviderCache.Count; p++)
         {
             double pCurrVal = ProviderCache[p].Value;
-            double pPrevVal = p > 0 ? ProviderCache[p - 1].Value : double.NaN;
+            double pPrevVal = p > 0 && p < ProviderCache.Count ? ProviderCache[p - 1].Value : double.NaN;
             double pRoc = CalculateRoc(pCurrVal, pPrevVal);
 
             // Calculate ROC EMA
@@ -236,10 +236,18 @@ public class PmoHub
     private double InitRocEma(int endIndex)
     {
         double sum = 0;
-        for (int p = endIndex - TimePeriods + 1; p <= endIndex; p++)
+        int startIndex = endIndex - TimePeriods + 1;
+        
+        // Ensure bounds are valid
+        if (startIndex < 1 || endIndex >= ProviderCache.Count)
+        {
+            return double.NaN;
+        }
+        
+        for (int p = startIndex; p <= endIndex && p < ProviderCache.Count; p++)
         {
             double pCurrVal = ProviderCache[p].Value;
-            double pPrevVal = p > 0 ? ProviderCache[p - 1].Value : double.NaN;
+            double pPrevVal = p > 0 && p < ProviderCache.Count ? ProviderCache[p - 1].Value : double.NaN;
             double pRoc = pPrevVal == 0 ? double.NaN : 100 * ((pCurrVal / pPrevVal) - 1);
             sum += pRoc;
         }
@@ -253,10 +261,18 @@ public class PmoHub
         double sum = 0;
         double tempPrevRocEma = double.NaN;
 
-        for (int p = endIndex - SmoothPeriods + 1; p <= endIndex; p++)
+        int startIndex = endIndex - SmoothPeriods + 1;
+        
+        // Ensure bounds are valid
+        if (startIndex < 1 || endIndex >= ProviderCache.Count)
+        {
+            return double.NaN;
+        }
+
+        for (int p = startIndex; p <= endIndex && p < ProviderCache.Count; p++)
         {
             double pCurrVal = ProviderCache[p].Value;
-            double pPrevVal = p > 0 ? ProviderCache[p - 1].Value : double.NaN;
+            double pPrevVal = p > 0 && p < ProviderCache.Count ? ProviderCache[p - 1].Value : double.NaN;
             double pRoc = pPrevVal == 0 ? double.NaN : 100 * ((pCurrVal / pPrevVal) - 1);
 
             double pRocEma;

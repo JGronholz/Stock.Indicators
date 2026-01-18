@@ -100,7 +100,7 @@ public class PvoHub
 
         // Calculate Signal
         double signal;
-        if (i >= SignalPeriods + SlowPeriods - 2 && (i == 0 || Cache[i - 1].Signal is null))
+        if (i >= SignalPeriods + SlowPeriods - 2 && (i == 0 || (Cache.Count >= i && Cache[i - 1].Signal is null)))
         {
             // Initialize signal as SMA of PVO values
             double sum = pvo;
@@ -114,7 +114,7 @@ public class PvoHub
         else
         {
             // Calculate signal EMA normally
-            signal = Ema.Increment(SignalK, i > 0 ? Cache[i - 1].Signal ?? double.NaN : double.NaN, pvo);
+            signal = Ema.Increment(SignalK, i > 0 && Cache.Count >= i ? Cache[i - 1].Signal ?? double.NaN : double.NaN, pvo);
         }
 
         // Candidate result

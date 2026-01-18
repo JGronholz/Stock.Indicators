@@ -81,8 +81,15 @@ public class SuperTrendHub
         else
         {
             double sumTr = 0;
+            int startIndex = i - LookbackPeriods + 1;
 
-            for (int p = i - LookbackPeriods + 1; p <= i; p++)
+            // Ensure bounds are valid
+            if (startIndex < 1 || i >= ProviderCache.Count)
+            {
+                return (new SuperTrendResult(item.Timestamp, null, null, null), i);
+            }
+
+            for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
             {
                 sumTr += Tr.Increment(
                     (double)ProviderCache[p].High,
@@ -212,15 +219,25 @@ public class SuperTrendHub
             {
                 // Initialize ATR
                 double sumTr = 0;
-                for (int p = i - LookbackPeriods + 1; p <= i; p++)
+                int startIndex = i - LookbackPeriods + 1;
+                
+                // Ensure bounds are valid
+                if (startIndex >= 1 && i < ProviderCache.Count)
                 {
-                    sumTr += Tr.Increment(
-                        (double)ProviderCache[p].High,
-                        (double)ProviderCache[p].Low,
-                        (double)ProviderCache[p - 1].Close);
-                }
+                    for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
+                    {
+                        sumTr += Tr.Increment(
+                            (double)ProviderCache[p].High,
+                            (double)ProviderCache[p].Low,
+                            (double)ProviderCache[p - 1].Close);
+                    }
 
-                atr = sumTr / LookbackPeriods;
+                    atr = sumTr / LookbackPeriods;
+                }
+                else
+                {
+                    atr = double.NaN;
+                }
             }
 
             PrevAtr = atr;

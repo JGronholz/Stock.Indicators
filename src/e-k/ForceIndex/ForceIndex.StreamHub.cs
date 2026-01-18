@@ -41,7 +41,7 @@ public class ForceIndexHub
         double fi = double.NaN;
 
         // skip first period (need prior quote for delta)
-        if (i > 0)
+        if (i > 0 && i < ProviderCache.Count)
         {
             // get current and previous quotes
             IQuote currentQuote = (IQuote)ProviderCache[i];
@@ -54,7 +54,7 @@ public class ForceIndexHub
             if (i >= LookbackPeriods)
             {
                 // Check if previous result has a valid ForceIndex for incremental update
-                if (Cache[i - 1].ForceIndex is not null)
+                if (Cache.Count >= i && Cache[i - 1].ForceIndex is not null)
                 {
                     // Incremental O(1) EMA update
                     fi = Ema.Increment(_k, Cache[i - 1].Value, rawFi);

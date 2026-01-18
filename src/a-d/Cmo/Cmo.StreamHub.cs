@@ -93,8 +93,14 @@ public class CmoHub
         // Start from targetIndex - LookbackPeriods + 1, but not before index 1 (we need i-1 for prevValue)
         int startIdx = Math.Max(1, targetIndex + 1 - LookbackPeriods);
 
+        // Ensure upper bounds are valid
+        if (targetIndex >= ProviderCache.Count)
+        {
+            return;
+        }
+
         // Rebuild tick buffer from ProviderCache
-        for (int p = startIdx; p <= targetIndex; p++)
+        for (int p = startIdx; p <= targetIndex && p < ProviderCache.Count; p++)
         {
             double prevValue = ProviderCache[p - 1].Value;
             double currValue = ProviderCache[p].Value;

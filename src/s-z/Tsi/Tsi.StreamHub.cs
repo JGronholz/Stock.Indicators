@@ -100,8 +100,15 @@ public class TsiHub
             // Initialize first smoothing with SMA
             double sumC = 0;
             double sumA = 0;
+            int startIndex = i - LookbackPeriods + 1;
 
-            for (int p = i - LookbackPeriods + 1; p <= i; p++)
+            // Ensure bounds are valid
+            if (startIndex < 1 || i >= ProviderCache.Count)
+            {
+                return (new TsiResult(item.Timestamp), i);
+            }
+
+            for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
             {
                 double pValue = ProviderCache[p].Value;
                 double pPrevValue = ProviderCache[p - 1].Value;
@@ -278,20 +285,30 @@ public class TsiHub
             {
                 double sumC = 0;
                 double sumA = 0;
+                int startIndex = i - LookbackPeriods + 1;
 
-                for (int p = i - LookbackPeriods + 1; p <= i; p++)
+                // Ensure bounds are valid
+                if (startIndex >= 1 && i < ProviderCache.Count)
                 {
-                    double pValue = ProviderCache[p].Value;
-                    double pPrevValue = ProviderCache[p - 1].Value;
-                    double pChange = pValue - pPrevValue;
-                    sumC += pChange;
-                    sumA += Math.Abs(pChange);
-                }
+                    for (int p = startIndex; p <= i && p < ProviderCache.Count; p++)
+                    {
+                        double pValue = ProviderCache[p].Value;
+                        double pPrevValue = ProviderCache[p - 1].Value;
+                        double pChange = pValue - pPrevValue;
+                        sumC += pChange;
+                        sumA += Math.Abs(pChange);
+                    }
 
-                cs1 = sumC / LookbackPeriods;
-                as1 = sumA / LookbackPeriods;
-                _prevCs1 = cs1;
-                _prevAs1 = as1;
+                    cs1 = sumC / LookbackPeriods;
+                    as1 = sumA / LookbackPeriods;
+                    _prevCs1 = cs1;
+                    _prevAs1 = as1;
+                }
+                else
+                {
+                    cs1 = double.NaN;
+                    as1 = double.NaN;
+                }
             }
             // normal first smoothing
             else if (!double.IsNaN(_prevCs1))
