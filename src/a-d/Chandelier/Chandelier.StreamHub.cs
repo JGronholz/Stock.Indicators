@@ -37,6 +37,10 @@ public class ChandelierHub
         Reinitialize();
     }
 
+
+    /// <inheritdoc/>
+    public override IReadOnlyList<ChandelierResult> AsStaticSeries(IReadOnlyList<IQuote> input)
+        => input.ToChandelier(LookbackPeriods, Multiplier, Type);
     /// <inheritdoc/>
     public int LookbackPeriods { get; init; }
 
