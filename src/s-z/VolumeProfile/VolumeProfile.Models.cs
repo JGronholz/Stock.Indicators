@@ -3,7 +3,11 @@ namespace Skender.Stock.Indicators;
 [Serializable]
 public record VolumeProfileResult : ISeries
 {
+#pragma warning disable CA5362 // Do not refer to potentially dangerous types in JSON deserializer
+    // This reference is intentional for maintaining cumulative state in a linked-list pattern.
+    // The previousResult is private and not serialized, only used for incremental calculations.
     private VolumeProfileResult? previousResult;
+#pragma warning restore CA5362
 
     // internal cumulative store kept per-result to avoid shared mutable state
     private Dictionary<decimal, decimal> _cumulative;
