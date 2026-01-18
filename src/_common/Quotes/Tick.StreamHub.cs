@@ -176,6 +176,9 @@ public class TickHub
     }
 }
 
+/// <summary>
+/// Extension methods for tick data aggregation and processing.
+/// </summary>
 public static partial class Ticks
 {
     /// <summary>

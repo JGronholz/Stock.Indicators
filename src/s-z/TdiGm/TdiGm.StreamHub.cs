@@ -17,9 +17,16 @@ namespace Skender.Stock.Indicators;
 public sealed class TdiGmHub
     : ChainHub<IReusable, TdiGmResult>, ITdiGm
 {
+    /// <inheritdoc />
     public int RsiPeriod { get; init; }
+
+    /// <inheritdoc />
     public int BandLength { get; init; }
+
+    /// <inheritdoc />
     public int FastLength { get; init; }
+
+    /// <inheritdoc />
     public int SlowLength { get; init; }
 
     // Chained hubs for efficient computation
@@ -93,9 +100,9 @@ public sealed class TdiGmHub
 
         if (middleBandResult?.Sma != null && stdDevResult?.StdDev != null)
         {
-            var ma = middleBandResult.Sma.Value;
-            var stdDev = stdDevResult.StdDev.Value;
-            var offset = 1.6185 * stdDev;
+            double ma = middleBandResult.Sma.Value;
+            double stdDev = stdDevResult.StdDev.Value;
+            double offset = 1.6185 * stdDev;
 
             upper = ma + offset;
             lower = ma - offset;
@@ -103,7 +110,7 @@ public sealed class TdiGmHub
         }
 
         // Create the result
-        var result = new TdiGmResult() {
+        TdiGmResult result = new() {
             Timestamp = timestamp,
             Upper = upper,
             Lower = lower,

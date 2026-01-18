@@ -1,5 +1,8 @@
 namespace Skender.Stock.Indicators;
 
+/// <summary>
+/// Volume Profile extension methods for calculating volume distribution across price levels.
+/// </summary>
 public static partial class VolumeProfile
 {
     // Volume Profile
