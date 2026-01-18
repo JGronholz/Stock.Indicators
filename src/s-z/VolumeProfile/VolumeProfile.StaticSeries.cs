@@ -13,19 +13,19 @@ public static partial class VolumeProfile
         ArgumentNullException.ThrowIfNull(quotes);
         ValidateVolumeProfile(precision);
 
-        List<VolumeProfileResult> results = new List<VolumeProfileResult>();
+        List<VolumeProfileResult> results = [];
         VolumeProfileResult? vpvrResult = null;
         foreach (IQuote quote in quotes)
         {
             vpvrResult = new VolumeProfileResult(quote, vpvrResult);
             results.Add(vpvrResult);
-            vpvrResult.getVolumeProfile(precision);
+            vpvrResult.GetVolumeProfile(precision);
         }
 
         return results;
     }
 
-    private static IEnumerable<VolumeProfileValue> getVolumeProfile(this VolumeProfileResult vpResult, decimal precision = 0.001M)
+    private static IEnumerable<VolumeProfileValue> GetVolumeProfile(this VolumeProfileResult vpResult, decimal precision = 0.001M)
     {
         ValidateVolumeProfile(precision);
 
@@ -33,7 +33,7 @@ public static partial class VolumeProfile
         decimal low = Math.Floor(vpResult.Low / precision) * precision;
         decimal delta = high - low;
 
-        List<VolumeProfileValue> results = new List<VolumeProfileValue>();
+        List<VolumeProfileValue> results = [];
         if (delta >= 0)
         {
             // number of bins includes both endpoints: e.g., low..high with step 'precision'
@@ -62,7 +62,7 @@ public static partial class VolumeProfile
             if (remainder != 0 && results.Count > 0)
             {
                 // add remainder to the last bin
-                results[results.Count - 1].Volume += remainder;
+                results[^1].Volume += remainder;
             }
 
             results.Sort((first, second) => first.Price.CompareTo(second.Price));

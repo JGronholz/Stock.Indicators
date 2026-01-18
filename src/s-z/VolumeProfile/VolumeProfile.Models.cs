@@ -10,11 +10,11 @@ public record VolumeProfileResult : ISeries
 #pragma warning disable CA5362 // Do not refer to potentially dangerous types in JSON deserializer
     // This reference is intentional for maintaining cumulative state in a linked-list pattern.
     // The previousResult is private and not serialized, only used for incremental calculations.
-    private VolumeProfileResult? previousResult;
+    private readonly VolumeProfileResult? previousResult;
 #pragma warning restore CA5362
 
     // internal cumulative store kept per-result to avoid shared mutable state
-    private Dictionary<decimal, decimal> _cumulative;
+    private readonly Dictionary<decimal, decimal> _cumulative;
 
     /// <summary>
     /// Initializes a new instance of the VolumeProfileResult class.
@@ -108,22 +108,13 @@ public record VolumeProfileResult : ISeries
 /// <summary>
 /// Represents the volume traded at a specific price level.
 /// </summary>
-public class VolumeProfileValue
+/// <param name="price">The price level.</param>
+/// <param name="volume">The volume traded at this price level.</param>
+public class VolumeProfileValue(decimal price, decimal volume)
 {
-    /// <summary>
-    /// Initializes a new instance of the VolumeProfileValue class.
-    /// </summary>
-    /// <param name="price">The price level.</param>
-    /// <param name="volume">The volume traded at this price level.</param>
-    public VolumeProfileValue(decimal price, decimal volume)
-    {
-        Price = price;
-        Volume = volume;
-    }
-
     /// <summary>Price level</summary>
-    public decimal Price { get; set; }
+    public decimal Price { get; set; } = price;
 
     /// <summary>Volume traded at this price level</summary>
-    public decimal Volume { get; set; }
+    public decimal Volume { get; set; } = volume;
 }
