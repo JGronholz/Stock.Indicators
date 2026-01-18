@@ -118,6 +118,7 @@ public class QuoteAggregatorHub
                     NotifyObserversOnRebuild(barTimestamp);
                 }
             }
+
             return;
         }
 

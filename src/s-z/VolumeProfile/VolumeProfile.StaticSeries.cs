@@ -49,7 +49,7 @@ public static partial class VolumeProfile
 
             for (int i = 0; i < bins; i++)
             {
-                decimal price = low + precision * i;
+                decimal price = low + (precision * i);
                 results.Add(new VolumeProfileValue(price, volumeSliceSize));
             }
 

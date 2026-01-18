@@ -1,15 +1,18 @@
 namespace Skender.Stock.Indicators;
 
 /// <summary>
+/// <para>
 /// TDIGM (Traders Dynamic Index [Goldminds]) streaming hub implementation.
 /// Derives from ChainHub to enable streaming computation and chaining following Skender v3 pattern.
-/// 
+/// </para>
+/// <para>
 /// Computation pipeline using chained hubs:
 /// 1. RsiHub(rsiPeriod) on input quotes → RSI values
 /// 2. SmaHub(bandLength) on RSI values → middle band
 /// 3. StdDevHub(bandLength) on RSI values → used to calculate upper/lower bands with 1.6185 multiplier
 /// 4. SmaHub(fastLength) on RSI values → fast MA
 /// 5. SmaHub(slowLength) on RSI values → slow MA
+/// </para>
 /// </summary>
 public sealed class TdiGmHub
     : ChainHub<IReusable, TdiGmResult>, ITdiGm
@@ -78,10 +81,10 @@ public sealed class TdiGmHub
 
         // Get the latest results from each chained hub
         // Each hub has already computed its value for this index
-        var middleBandResult = _middleBandHub.Results[^1];
-        var stdDevResult = _stdDevHub.Results[^1];
-        var fastMaResult = _fastMaHub.Results[^1];
-        var slowMaResult = _slowMaHub.Results[^1];
+        SmaResult middleBandResult = _middleBandHub.Results[^1];
+        StdDevResult stdDevResult = _stdDevHub.Results[^1];
+        SmaResult fastMaResult = _fastMaHub.Results[^1];
+        SmaResult slowMaResult = _slowMaHub.Results[^1];
 
         // Calculate TDIGM bands using the hub results
         double? upper = null;

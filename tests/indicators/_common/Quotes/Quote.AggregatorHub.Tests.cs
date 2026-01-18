@@ -508,6 +508,7 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
 
             // Ensure positive prices
             if (basePrice < 50m) { basePrice = 50m; }
+
             if (basePrice > 150m) { basePrice = 150m; }
 
             decimal open = basePrice;
@@ -526,22 +527,22 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
 
         // Verify 15-minute aggregation (3x 5-minute bars)
         IReadOnlyList<IQuote> fifteenMinuteResults = fifteenMinuteAgg.Results;
-        int expectedFifteenMinute = totalFiveMinutePeriods / 3;
+        const int expectedFifteenMinute = totalFiveMinutePeriods / 3;
         fifteenMinuteResults.Should().HaveCount(expectedFifteenMinute);
 
         // Verify 1-hour aggregation (12x 5-minute bars)
         IReadOnlyList<IQuote> oneHourResults = oneHourAgg.Results;
-        int expectedOneHour = totalFiveMinutePeriods / 12;
+        const int expectedOneHour = totalFiveMinutePeriods / 12;
         oneHourResults.Should().HaveCount(expectedOneHour);
 
         // Verify 4-hour aggregation (48x 5-minute bars)
         IReadOnlyList<IQuote> fourHourResults = fourHourAgg.Results;
-        int expectedFourHour = totalFiveMinutePeriods / 48;
+        const int expectedFourHour = totalFiveMinutePeriods / 48;
         fourHourResults.Should().HaveCount(expectedFourHour);
 
         // Verify 1-day aggregation (288x 5-minute bars)
         IReadOnlyList<IQuote> oneDayResults = oneDayAgg.Results;
-        int expectedOneDay = totalFiveMinutePeriods / 288;
+        const int expectedOneDay = totalFiveMinutePeriods / 288;
         oneDayResults.Should().HaveCount(expectedOneDay);
 
         // Verify 1-week aggregation
@@ -680,6 +681,7 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
             basePrice += priceChange * 0.1m;
 
             if (basePrice < 50m) { basePrice = 50m; }
+
             if (basePrice > 150m) { basePrice = 150m; }
 
             decimal open = basePrice;
@@ -701,7 +703,7 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
         QuoteAggregatorHub oneDayAgg = fiveMinuteProvider.ToQuoteAggregatorHub(PeriodSize.Day);
 
         // Split quotes into chunks for different threads
-        int threadCount = 4;
+        const int threadCount = 4;
         int chunkSize = quotes.Count / threadCount;
         List<Exception> exceptions = [];
         object lockObj = new();
@@ -731,11 +733,11 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
                         exceptions.Add(ex);
                     }
                 }
-            });
+            }, TestContext.CancellationToken);
         }
 
         // Wait for all threads to complete
-        Task.WaitAll(tasks);
+        Task.WaitAll(tasks, TestContext.CancellationToken);
 
         // Document thread-safety issues if any exceptions occurred
         if (exceptions.Count > 0)
@@ -790,5 +792,7 @@ public class QuoteAggregatorHubTests : StreamHubTestBase, ITestQuoteObserver, IT
         fifteenMinuteAgg.Unsubscribe();
         fiveMinuteProvider.EndTransmission();
     }
+
+    public TestContext TestContext { get; set; }
 }
 

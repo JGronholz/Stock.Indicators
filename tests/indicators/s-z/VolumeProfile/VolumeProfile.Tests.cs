@@ -17,7 +17,7 @@ public class VpvrTests : TestBase
         .ToList();
 
         // proper quantities
-        Assert.HasCount(Quotes.Count(), results);
+        Assert.HasCount(Quotes.Count, results);
 
         // dates align with source quotes
         int i = 0;

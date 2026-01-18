@@ -20,7 +20,7 @@ public class VpvrAnalysisTests : TestBase
         Assert.HasCount(502, results);
 
         // at least some bins exist for the last result
-        var last = results.Last();
+        VolumeProfileResult last = results.Last();
         Assert.IsNotNull(last);
         Assert.IsTrue(last.VolumeProfile.Any());
 
@@ -31,7 +31,7 @@ public class VpvrAnalysisTests : TestBase
 
         // the top cumulative bin should match the max volume in the cumulative profile
         var maxVolume = last.CumulativeVolumeProfile.Max(v => v.Volume);
-        var top = last.CumulativeVolumeProfile.OrderByDescending(v => v.Volume).First();
+        VolumeProfileValue top = last.CumulativeVolumeProfile.OrderByDescending(v => v.Volume).First();
         Assert.AreEqual(maxVolume, top.Volume);
 
         // basic usage sanity
