@@ -9,7 +9,7 @@ public record VolumeProfileResult : ISeries
 {
     // internal cumulative store kept per-result to avoid shared mutable state
     private readonly Dictionary<decimal, decimal> _cumulative;
-    
+
     // store only the previous total value to avoid reference cycle
     private readonly decimal _previousCumulativeTotal;
 
@@ -34,7 +34,7 @@ public record VolumeProfileResult : ISeries
         _cumulative = previousResult?._cumulative != null
             ? new Dictionary<decimal, decimal>(previousResult._cumulative)
             : new Dictionary<decimal, decimal>();
-        
+
         // cache the previous cumulative total to avoid reference cycle
         _previousCumulativeTotal = previousResult?._cumulative?.Sum(kvp => kvp.Value) ?? 0M;
     }
