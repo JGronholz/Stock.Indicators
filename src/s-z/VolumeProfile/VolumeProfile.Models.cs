@@ -3,15 +3,14 @@ namespace Skender.Stock.Indicators;
 [Serializable]
 public record VolumeProfileResult : ISeries
 {
-    private VolumeProfileResult? previousResult;
-
     // internal cumulative store kept per-result to avoid shared mutable state
     private Dictionary<decimal, decimal> _cumulative;
+    
+    // store only the previous total value to avoid reference cycle
+    private readonly decimal _previousCumulativeTotal;
 
     public VolumeProfileResult(IQuote quote, VolumeProfileResult? previousResult)
     {
-        this.previousResult = previousResult;
-
         if (quote is null)
         {
             throw new ArgumentNullException(nameof(quote));
@@ -26,6 +25,9 @@ public record VolumeProfileResult : ISeries
         _cumulative = previousResult?._cumulative != null
             ? new Dictionary<decimal, decimal>(previousResult._cumulative)
             : new Dictionary<decimal, decimal>();
+        
+        // cache the previous cumulative total to avoid reference cycle
+        _previousCumulativeTotal = previousResult?._cumulative?.Sum(kvp => kvp.Value) ?? 0M;
     }
 
     public DateTime Timestamp { get; private set; }
@@ -54,8 +56,7 @@ public record VolumeProfileResult : ISeries
             }
 
             // ensure totals sum exactly to previous total + this.Volume to avoid tiny rounding errors
-            decimal previousTotal = previousResult?._cumulative.Sum(kvp => kvp.Value) ?? 0M;
-            decimal expectedTotal = previousTotal + Volume;
+            decimal expectedTotal = _previousCumulativeTotal + Volume;
             decimal currentTotal = _cumulative.Sum(kvp => kvp.Value);
             decimal diff = expectedTotal - currentTotal;
             if (diff != 0M && _cumulative.Count > 0)
