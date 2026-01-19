@@ -7,14 +7,11 @@ namespace Skender.Stock.Indicators;
 [Serializable]
 public record VolumeProfileResult : ISeries
 {
-#pragma warning disable CA5362 // Do not refer to potentially dangerous types in JSON deserializer
-    // This reference is intentional for maintaining cumulative state in a linked-list pattern.
-    // The previousResult is private and not serialized, only used for incremental calculations.
-    private readonly VolumeProfileResult? previousResult;
-#pragma warning restore CA5362
-
     // internal cumulative store kept per-result to avoid shared mutable state
     private readonly Dictionary<decimal, decimal> _cumulative;
+
+    // store only the previous total value to avoid reference cycle
+    private readonly decimal _previousCumulativeTotal;
 
     /// <summary>
     /// Initializes a new instance of the VolumeProfileResult class.
@@ -23,8 +20,6 @@ public record VolumeProfileResult : ISeries
     /// <param name="previousResult">The previous result for cumulative calculations, or null for the first result.</param>
     public VolumeProfileResult(IQuote quote, VolumeProfileResult? previousResult)
     {
-        this.previousResult = previousResult;
-
         if (quote is null)
         {
             throw new ArgumentNullException(nameof(quote));
@@ -39,6 +34,9 @@ public record VolumeProfileResult : ISeries
         _cumulative = previousResult?._cumulative != null
             ? new Dictionary<decimal, decimal>(previousResult._cumulative)
             : new Dictionary<decimal, decimal>();
+
+        // cache the previous cumulative total to avoid reference cycle
+        _previousCumulativeTotal = previousResult?._cumulative?.Sum(kvp => kvp.Value) ?? 0M;
     }
 
     /// <summary>Date and time of the quote</summary>
@@ -79,8 +77,7 @@ public record VolumeProfileResult : ISeries
             }
 
             // ensure totals sum exactly to previous total + this.Volume to avoid tiny rounding errors
-            decimal previousTotal = previousResult?._cumulative.Sum(kvp => kvp.Value) ?? 0M;
-            decimal expectedTotal = previousTotal + Volume;
+            decimal expectedTotal = _previousCumulativeTotal + Volume;
             decimal currentTotal = _cumulative.Sum(kvp => kvp.Value);
             decimal diff = expectedTotal - currentTotal;
             if (diff != 0M && _cumulative.Count > 0)
