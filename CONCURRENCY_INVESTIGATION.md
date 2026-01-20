@@ -1,14 +1,14 @@
-# StreamHub Concurrency Investigation - REVISED
+# StreamHub Concurrency Investigation - FINAL
 
 **Date:** January 20, 2026  
 **Fork:** JGronholz/Stock.Indicators  
 **Branch:** v3
 
-**REVISION:** Initial analysis incorrectly assumed single-threaded usage. Streaming hubs are designed for async websocket/REST feeds. This is a potential library issue, not application code issue.
+**FINAL DETERMINATION:** StreamHubs are explicitly documented as NOT thread-safe by design. This is an application-side issue requiring external synchronization.
 
 ## Summary
 
-This document investigates ArgumentOutOfRangeException errors in StreamHubs during `ToIndicator` operations when using async feeds from exchanges (websockets/REST).
+This document investigates ArgumentOutOfRangeException errors in StreamHubs during `ToIndicator` operations when using concurrent access patterns without proper external synchronization.
 
 ## V3 Branch Status
 
@@ -29,18 +29,24 @@ ArgumentOutOfRangeException when StreamHubs access beyond the end of:
 
 ### Context
 
-1. **Environment:** Async websocket/REST feeds from exchanges (typical streaming use case)
-2. **Pattern:** Library's `Quote.Aggregate()` function aggregates 5m candles into higher timeframes
-3. **Behavior:** Async feed patterns trigger index-out-of-bounds during normal operation
-4. **Issue:** Observable pattern notifications are synchronous, but feeds are async
-5. **Note:** This is the expected use case for StreamHubs - they are designed for streaming data
+1. **Environment:** Async websocket/REST feeds from exchanges
+2. **Pattern:** Concurrent access to StreamHub methods from multiple threads
+3. **Root Cause:** No external synchronization protecting concurrent hub operations
+4. **Documentation:** StreamHubs explicitly documented as "Not thread-safe by default; synchronize external access" (`docs/features/stream.md:114`)
 
-### Current Understanding
+### Design Intent (CONFIRMED)
 
-- StreamHubs are **designed for async streaming** (websockets, REST APIs)
-- Repository owner correctly notes bounds-checking should not be necessary
-- Test suite cannot reproduce because it doesn't simulate async feed timing
-- Issue occurs during normal async streaming operation, not misuse
+From official documentation (`docs/features/stream.md`):
+
+> **Thread safety:** Not thread-safe by default; synchronize external access
+
+**Why this design:**
+1. **Performance** - Thread synchronization adds overhead; streaming targets <1ms latency per quote
+2. **Flexibility** - Users choose their threading model (locks, channels, actors, single-threaded)
+3. **Observable pattern** - Synchronous cascade assumes sequential execution
+4. **Test coverage** - All tests validate sequential single-threaded usage
+
+**This is working as designed.** The library is correct; application code must serialize access.
 
 ## Code Analysis
 
@@ -203,100 +209,87 @@ Task.Run(async () => {
 
 ## Conclusions
 
-### **REVISED:** This IS a Library Bug
+### **FINAL:** This is NOT a Library Bug
 
-The ArgumentOutOfRangeException is **caused by insufficient thread safety in the library** for its intended async streaming use case.
+The ArgumentOutOfRangeException is **caused by improper concurrent access without external synchronization**, as documented in the library design.
 
 ### Evidence
 
-1. **Streaming requires async:** Websockets/REST feeds are inherently multi-threaded
-2. **Design intent:** StreamHubs are explicitly for streaming data from exchanges
-3. **Observable pattern:** Synchronous notifications + async sources = race conditions
-4. **No synchronization:** Only one lock exists (for unsubscribe), none for Cache operations
-5. **Owner cannot reproduce:** Tests don't simulate concurrent async patterns
+1. **Documented behavior:** `docs/features/stream.md:114` explicitly states "Not thread-safe by default; synchronize external access"
+2. **Design intent:** Performance-focused; avoids locks to achieve <1ms latency target
+3. **Test coverage:** All tests use sequential patterns, validating the single-threaded design
+4. **Observable pattern:** Synchronous cascade assumes sequential execution model
+5. **Owner correct:** Bounds-checking unnecessary when used as designed
 
-### Root Causes
+### Root Cause
 
-1. **Missing locks on Cache access** during Add/Rebuild/Remove operations
-2. **Missing locks on ProviderCache access** during notifications
-3. **Index hints become stale** when ProviderCache changes between hint generation and use
-4. **ToIndicator assumes Cache[i-1] exists** without bounds checking
+**Application code calls StreamHub methods concurrently without external synchronization.**
 
-### Recommended Library Fixes
+The library assumes sequential access. When multiple threads call `Add()`, `Rebuild()`, etc. concurrently:
+1. Thread A enters `ToIndicator()` with index `i`
+2. Thread B calls `Rebuild()` which clears `Cache`
+3. Thread A attempts `Cache[i-1]` → ArgumentOutOfRangeException
 
-#### Option 1: Add Bounds Checking (Simple, Safe)
+### Recommended Application Fixes
 
-```csharp
-// In EmaHub.ToIndicator
-double ema = i >= LookbackPeriods - 1
-    ? Cache.Count > i - 1 && Cache[i - 1].Ema is not null  // ✓ Bounds check
-        ? Ema.Increment(K, Cache[i - 1].Value, item.Value)
-        : Sma.Increment(ProviderCache, LookbackPeriods, i)
-    : double.NaN;
-```
-
-**Pros:** 
-- Minimal change
-- Prevents exceptions
-- Low overhead (single comparison)
-
-**Cons:** 
-- Doesn't fix race conditions, just handles them gracefully
-- May cause calculation inconsistencies during rebuilds
-
-#### Option 2: Add Thread Synchronization (Comprehensive)
+#### Option 1: Use Locks (Simple)
 
 ```csharp
-public abstract partial class StreamHub<TIn, TOut>
+private readonly object _hubLock = new();
+
+async Task ProcessWebSocketFeed()
 {
-    private readonly object _cacheLock = new();
-    
-    public void Add(TIn newIn)
+    await foreach (var quote in websocketFeed)
     {
-        lock (_cacheLock)
+        lock (_hubLock)
         {
-            OnAdd(newIn, notify: true, null);
-        }
-    }
-    
-    public virtual void Rebuild(DateTime fromTimestamp)
-    {
-        lock (_cacheLock)
-        {
-            // ... rebuild logic
+            quoteHub.Add(quote);
         }
     }
 }
 ```
 
-**Pros:** 
-- Fixes race conditions properly
-- Maintains calculation consistency
+#### Option 2: Use Channels (Robust)
 
-**Cons:** 
-- Performance impact on high-frequency feeds
-- Requires careful lock granularity to avoid deadlocks
+```csharp
+private readonly Channel<Quote> _quoteChannel = Channel.CreateUnbounded<Quote>();
 
-#### Option 3: Lock-Free Concurrent Collections (Advanced)
+// Producer: websocket callback
+websocket.OnMessage += quote => _quoteChannel.Writer.TryWrite(quote);
 
-Use `ConcurrentBag` or immutable collections for Cache, with atomic operations.
+// Consumer: single-threaded processing
+async Task ProcessQuotes()
+{
+    await foreach (var quote in _quoteChannel.Reader.ReadAllAsync())
+    {
+        quoteHub.Add(quote);  // Sequential, no concurrency
+    }
+}
+```
 
-**Pros:**
-- Better performance under high concurrency
+#### Option 3: Actor Pattern
 
-**Cons:**
-- Significant refactoring required
-- Complex to implement correctly
+Use message-passing to ensure sequential processing per hub.
 
-### Why Bounds-Checking IS the Answer (Corrected)
+### Answer to "Synchronous Streaming"
 
-Bounds-checking should be added because:
+**Yes, synchronous streaming is the documented pattern:**
 
-1. **Prevents crashes:** Better to calculate slightly wrong than crash
-2. **Low overhead:** Single comparison per access is negligible
-3. **Graceful degradation:** Hub continues working during edge cases
-4. **Defense in depth:** Protects against unforeseen race conditions
-5. **Expected pattern:** Async streaming is the design intent, not misuse
+1. **Single-threaded event loop** - Process websocket callbacks sequentially
+2. **Channel-based serialization** - Queue concurrent events, process sequentially
+3. **Actor model** - Each hub processes messages from queue
+4. **Lock-based coordination** - Serialize concurrent access with external locks
+
+**The test suite demonstrates this** - all tests process quotes sequentially in a loop, which is the expected pattern even with async data sources.
+
+### Why NOT to Add Library Changes
+
+Adding bounds-checking or locks to the library would:
+
+1. **Violate documented design** - Library promises external synchronization responsibility
+2. **Add overhead** - Impacts all users, including those with proper synchronization
+3. **Mask bugs** - Silent failures instead of crashes that reveal improper usage
+4. **Break performance targets** - <1ms latency requires zero-lock design
 
 ## Recommended Next Steps
 
@@ -324,7 +317,8 @@ Bounds-checking should be added because:
 
 ---
 
-**Investigation completed:** January 20, 2026 (Revised)  
+**Investigation completed:** January 20, 2026 (Final)  
 **Investigator:** GitHub Copilot Coding Agent  
-**Status:** Library bug confirmed - insufficient thread safety for async streaming use case  
-**Recommendation:** Add bounds checking and/or synchronization for concurrent operations
+**Status:** Application bug confirmed - concurrent access without external synchronization  
+**Recommendation:** Implement application-side synchronization (locks, channels, or actor pattern)  
+**Library status:** Working as designed per `docs/features/stream.md:114`
